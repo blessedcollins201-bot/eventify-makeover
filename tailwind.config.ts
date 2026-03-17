@@ -12,8 +12,12 @@ export default {
         "2xl": "1400px",
       },
     },
+    fontFamily: {
+      sans: ['Inter', 'system-ui', 'sans-serif'],
+    },
     extend: {
       colors: {
+        surface: "hsl(var(--surface))",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
