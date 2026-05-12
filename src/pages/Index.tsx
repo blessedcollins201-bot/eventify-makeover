@@ -5,22 +5,7 @@ import CategoryPills from "@/components/CategoryPills";
 import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
-
-import eventRock from "@/assets/event-rock.jpg";
-import eventSports from "@/assets/event-sports.jpg";
-import eventTheater from "@/assets/event-theater.jpg";
-import eventPop from "@/assets/event-pop.jpg";
-import eventEdm from "@/assets/event-edm.jpg";
-import eventComedy from "@/assets/event-comedy.jpg";
-
-const events = [
-  { image: eventPop, title: "The Weeknd – After Hours World Tour", date: "Apr 12, 2026 • 8:00 PM", venue: "Madison Square Garden, NY", price: "$89", badge: "On Sale Now" },
-  { image: eventSports, title: "NBA Playoffs – Lakers vs Celtics", date: "Apr 18, 2026 • 7:30 PM", venue: "Crypto.com Arena, LA", price: "$145", badge: "Low Tickets" },
-  { image: eventTheater, title: "Hamilton – Broadway", date: "Apr 22, 2026 • 7:00 PM", venue: "Richard Rodgers Theatre, NY", price: "$199" },
-  { image: eventRock, title: "Foo Fighters – The Last Stand Tour", date: "May 3, 2026 • 8:00 PM", venue: "Wembley Stadium, London", price: "$75" },
-  { image: eventEdm, title: "Calvin Harris – Summerfest", date: "May 15, 2026 • 10:00 PM", venue: "Las Vegas Festival Grounds", price: "$120", badge: "Just Announced" },
-  { image: eventComedy, title: "John Mulaney – Live in Chicago", date: "May 20, 2026 • 9:00 PM", venue: "Chicago Theatre, IL", price: "$65" },
-];
+import { events } from "@/data/events";
 
 const Index = () => {
   return (

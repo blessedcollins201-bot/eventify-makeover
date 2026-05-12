@@ -1,7 +1,9 @@
 import { motion } from "framer-motion";
 import { Calendar, MapPin } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface EventCardProps {
+  id: string;
   image: string;
   title: string;
   date: string;
@@ -11,7 +13,7 @@ interface EventCardProps {
   index: number;
 }
 
-const EventCard = ({ image, title, date, venue, price, badge, index }: EventCardProps) => {
+const EventCard = ({ id, image, title, date, venue, price, badge, index }: EventCardProps) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -19,8 +21,9 @@ const EventCard = ({ image, title, date, venue, price, badge, index }: EventCard
       viewport={{ once: true }}
       transition={{ duration: 0.4, delay: index * 0.08 }}
       whileHover={{ y: -4, scale: 1.02 }}
-      className="card-event rounded-2xl overflow-hidden bg-card cursor-pointer group"
+      className="card-event rounded-2xl overflow-hidden bg-card group"
     >
+      <Link to={`/events/${id}`} className="block">
       {/* Image */}
       <div className="relative aspect-[16/9] overflow-hidden">
         <img
@@ -52,11 +55,12 @@ const EventCard = ({ image, title, date, venue, price, badge, index }: EventCard
         </div>
         <div className="flex items-center justify-between">
           <span className="text-sm font-bold text-foreground">From {price}</span>
-          <button className="px-4 py-1.5 bg-primary text-primary-foreground text-sm font-bold rounded-xl hover:opacity-90 transition-opacity">
+          <span className="px-4 py-1.5 bg-primary text-primary-foreground text-sm font-bold rounded-xl group-hover:opacity-90 transition-opacity">
             Tickets
-          </button>
+          </span>
         </div>
       </div>
+      </Link>
     </motion.div>
   );
 };
