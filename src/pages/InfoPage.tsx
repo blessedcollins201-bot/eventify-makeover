@@ -1,4 +1,4 @@
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Sparkles } from "lucide-react";
 import Navbar from "@/components/Navbar";
@@ -19,7 +19,9 @@ const titleize = (slug: string) =>
     .join(" ");
 
 const InfoPage = () => {
-  const { section = "", slug = "" } = useParams<{ section: string; slug?: string }>();
+  const { slug = "" } = useParams<{ slug?: string }>();
+  const { pathname } = useLocation();
+  const section = pathname.split("/").filter(Boolean)[0] ?? "";
   const meta = SECTION_LABELS[section] ?? { label: titleize(section), tagline: "" };
   const pageTitle = slug ? titleize(slug) : meta.label;
 
