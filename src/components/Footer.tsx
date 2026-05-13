@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import {
   Instagram,
   Twitter,
@@ -15,35 +16,76 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
-const footerLinks = {
-  discover: {
+type FooterLink = { label: string; to: string };
+
+const footerLinks: { title: string; links: FooterLink[] }[] = [
+  {
     title: "Discover",
-    links: ["Concerts", "Sports", "Arts & Theater", "Family", "VIP Experiences", "Festivals", "Comedy"],
+    links: [
+      { label: "Concerts", to: "/discover/concerts" },
+      { label: "Sports", to: "/discover/sports" },
+      { label: "Arts & Theater", to: "/discover/arts-and-theater" },
+      { label: "Family", to: "/discover/family" },
+      { label: "VIP Experiences", to: "/discover/vip-experiences" },
+      { label: "Festivals", to: "/discover/festivals" },
+      { label: "Comedy", to: "/discover/comedy" },
+    ],
   },
-  help: {
+  {
     title: "Help",
-    links: ["Customer Service", "My Account", "Order History", "FAQs", "Accessibility", "Gift Cards"],
+    links: [
+      { label: "Customer Service", to: "/help/customer-service" },
+      { label: "My Account", to: "/help/my-account" },
+      { label: "Order History", to: "/help/order-history" },
+      { label: "FAQs", to: "/help/faqs" },
+      { label: "Accessibility", to: "/help/accessibility" },
+      { label: "Gift Cards", to: "/help/gift-cards" },
+    ],
   },
-  company: {
+  {
     title: "Company",
-    links: ["About Us", "Careers", "Press", "Partners", "Investors", "Sustainability"],
+    links: [
+      { label: "About Us", to: "/company/about-us" },
+      { label: "Careers", to: "/company/careers" },
+      { label: "Press", to: "/company/press" },
+      { label: "Partners", to: "/company/partners" },
+      { label: "Investors", to: "/company/investors" },
+      { label: "Sustainability", to: "/company/sustainability" },
+    ],
   },
-  legal: {
+  {
     title: "Legal",
-    links: ["Terms of Use", "Privacy Policy", "Cookie Settings", "Ad Choices", "Do Not Sell", "Licenses"],
+    links: [
+      { label: "Terms of Use", to: "/legal/terms-of-use" },
+      { label: "Privacy Policy", to: "/legal/privacy-policy" },
+      { label: "Cookie Settings", to: "/legal/cookie-settings" },
+      { label: "Ad Choices", to: "/legal/ad-choices" },
+      { label: "Do Not Sell", to: "/legal/do-not-sell" },
+      { label: "Licenses", to: "/legal/licenses" },
+    ],
   },
-  forFans: {
+  {
     title: "For Fans",
-    links: ["Mobile App", "Fan Rewards", "Presales", "Ticket Insurance", "Group Sales", "Resale"],
+    links: [
+      { label: "Mobile App", to: "/fans/mobile-app" },
+      { label: "Fan Rewards", to: "/fans/fan-rewards" },
+      { label: "Presales", to: "/fans/presales" },
+      { label: "Ticket Insurance", to: "/fans/ticket-insurance" },
+      { label: "Group Sales", to: "/fans/group-sales" },
+      { label: "Resale", to: "/fans/resale" },
+    ],
   },
-};
+];
 
 const socialLinks = [
-  { icon: Instagram, label: "Instagram", href: "#" },
-  { icon: Twitter, label: "Twitter", href: "#" },
-  { icon: Facebook, label: "Facebook", href: "#" },
-  { icon: Youtube, label: "YouTube", href: "#" },
+  { icon: Instagram, label: "Instagram", href: "https://instagram.com" },
+  { icon: Twitter, label: "Twitter", href: "https://twitter.com" },
+  { icon: Facebook, label: "Facebook", href: "https://facebook.com" },
+  { icon: Youtube, label: "YouTube", href: "https://youtube.com" },
 ];
+
+const APP_STORE_URL = "https://www.apple.com/app-store/";
+const PLAY_STORE_URL = "https://play.google.com/store";
 
 const paymentIcons = [
   { name: "Visa", color: "#1A1F71" },
@@ -147,7 +189,7 @@ const Footer = () => {
             </div>
             <div className="flex items-center gap-3">
               {/* App Store Badge */}
-              <a href="#" className="h-10 px-4 rounded-xl bg-background/5 border border-background/10 flex items-center gap-2.5 hover:bg-background/10 transition-colors">
+              <a href={APP_STORE_URL} target="_blank" rel="noopener noreferrer" className="h-10 px-4 rounded-xl bg-background/5 border border-background/10 flex items-center gap-2.5 hover:bg-background/10 transition-colors">
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
                 </svg>
@@ -157,7 +199,7 @@ const Footer = () => {
                 </div>
               </a>
               {/* Google Play Badge */}
-              <a href="#" className="h-10 px-4 rounded-xl bg-background/5 border border-background/10 flex items-center gap-2.5 hover:bg-background/10 transition-colors">
+              <a href={PLAY_STORE_URL} target="_blank" rel="noopener noreferrer" className="h-10 px-4 rounded-xl bg-background/5 border border-background/10 flex items-center gap-2.5 hover:bg-background/10 transition-colors">
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M3 20.5v-17c0-.59.34-1.11.84-1.35L13.69 12l-9.85 9.85c-.5-.25-.84-.76-.84-1.35zm13.81-5.38L6.05 21.34l8.49-8.49 2.27 2.27zm3.35-4.31c.34.27.59.69.59 1.19s-.22.9-.57 1.18l-2.29 1.32-2.5-2.5 2.5-2.5 2.27 1.31zM6.05 2.66l10.76 6.22-2.27 2.27L6.05 2.66z"/>
                 </svg>
@@ -180,20 +222,20 @@ const Footer = () => {
           viewport={{ once: true, margin: "-50px" }}
           className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-8 lg:gap-10"
         >
-          {Object.values(footerLinks).map((section) => (
+          {footerLinks.map((section) => (
             <motion.div key={section.title} variants={itemVariants}>
               <h4 className="font-bold text-xs mb-5 text-background/60 uppercase tracking-[0.15em]">
                 {section.title}
               </h4>
               <ul className="space-y-3">
                 {section.links.map((link) => (
-                  <li key={link}>
-                    <a
-                      href="#"
+                  <li key={link.label}>
+                    <Link
+                      to={link.to}
                       className="text-sm text-background/35 hover:text-background transition-colors duration-200 font-medium"
                     >
-                      {link}
-                    </a>
+                      {link.label}
+                    </Link>
                   </li>
                 ))}
               </ul>
@@ -232,6 +274,8 @@ const Footer = () => {
                 <motion.a
                   key={label}
                   href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   whileHover={{ scale: 1.1, y: -2 }}
                   whileTap={{ scale: 0.95 }}
                   className="w-10 h-10 rounded-xl bg-background/5 border border-background/10 flex items-center justify-center text-background/35 hover:text-background hover:bg-background/10 transition-colors"
