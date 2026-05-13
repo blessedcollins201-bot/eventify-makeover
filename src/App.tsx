@@ -19,11 +19,15 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/events/:id" element={<EventDetail />} />
-          <Route path="/:section(discover|help|company|legal|fans)" element={<InfoPage />} />
+          <Route path="/discover" element={<InfoPage />} />
           <Route path="/discover/:slug" element={<InfoPage />} />
+          <Route path="/help" element={<InfoPage />} />
           <Route path="/help/:slug" element={<InfoPage />} />
+          <Route path="/company" element={<InfoPage />} />
           <Route path="/company/:slug" element={<InfoPage />} />
+          <Route path="/legal" element={<InfoPage />} />
           <Route path="/legal/:slug" element={<InfoPage />} />
+          <Route path="/fans" element={<InfoPage />} />
           <Route path="/fans/:slug" element={<InfoPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
