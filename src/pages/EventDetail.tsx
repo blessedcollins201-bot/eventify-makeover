@@ -1,7 +1,23 @@
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Calendar, Check, MapPin, Minus, Plus, ShieldCheck, Ticket } from "lucide-react";
+import {
+  ArrowLeft,
+  Calendar,
+  Check,
+  Clock,
+  Film,
+  MapPin,
+  Minus,
+  Music2,
+  Play,
+  Plus,
+  Share2,
+  ShieldCheck,
+  Sparkles,
+  Ticket,
+  Users,
+} from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { getEventById } from "@/data/events";
@@ -23,6 +39,27 @@ const tiers: SeatTier[] = [
 ];
 
 const SERVICE_FEE_RATE = 0.18;
+
+const videoClips = [
+  { title: "Official Trailer", duration: "2:14", tag: "Watch first" },
+  { title: "Behind the Scenes", duration: "4:02", tag: "Exclusive" },
+  { title: "Last Tour Highlights", duration: "3:28", tag: "Fan favorite" },
+  { title: "Venue Walk-Through", duration: "1:47", tag: "New" },
+];
+
+const fanReels = [
+  { handle: "@nyc_lights", caption: "Floor 4 — unreal energy 🔥" },
+  { handle: "@maya.beats", caption: "Encore moment, goosebumps" },
+  { handle: "@sebastian", caption: "Best opening I've seen all year" },
+  { handle: "@raelynn", caption: "Pyro + lasers = chef's kiss" },
+];
+
+const eventStats = [
+  { icon: Users, label: "Attending", value: "18.4k" },
+  { icon: Clock, label: "Run time", value: "~2h 30m" },
+  { icon: Music2, label: "Setlist", value: "26 songs" },
+  { icon: Sparkles, label: "Production", value: "4K visuals" },
+];
 
 const EventDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -54,6 +91,9 @@ const EventDetail = () => {
       description: `${qty} × ${tier.name} • Total $${total.toFixed(2)}`,
     });
   };
+
+  const handlePlay = (title: string) =>
+    toast.info(`${title}`, { description: "Video player coming soon." });
 
   return (
     <div className="min-h-screen bg-background">
@@ -94,6 +134,167 @@ const EventDetail = () => {
             <div>
               <h2 className="text-2xl font-black tracking-tight mb-3">About this event</h2>
               <p className="text-muted-foreground leading-relaxed">{event.description}</p>
+            </div>
+
+            {/* Stats Strip */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {eventStats.map(({ icon: Icon, label, value }) => (
+                <div
+                  key={label}
+                  className="rounded-2xl border border-border bg-card p-4"
+                >
+                  <Icon className="w-4 h-4 text-primary mb-2" strokeWidth={2.5} />
+                  <div className="text-lg font-black text-foreground leading-none">{value}</div>
+                  <div className="text-xs text-muted-foreground font-medium mt-1">{label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Featured Video Player Placeholder */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <div className="flex items-center gap-2 text-xs font-bold text-primary uppercase tracking-wider mb-1">
+                    <Film className="w-3.5 h-3.5" /> Watch &amp; Listen
+                  </div>
+                  <h2 className="text-2xl font-black tracking-tight">Get a feel for the show</h2>
+                </div>
+                <button
+                  onClick={() => handlePlay("Share")}
+                  className="hidden sm:inline-flex items-center gap-1.5 text-sm font-bold text-foreground/70 hover:text-foreground"
+                >
+                  <Share2 className="w-4 h-4" /> Share
+                </button>
+              </div>
+
+              <motion.button
+                onClick={() => handlePlay("Official Trailer")}
+                whileHover={{ scale: 1.005 }}
+                whileTap={{ scale: 0.995 }}
+                className="group relative w-full aspect-video rounded-3xl overflow-hidden border border-border shadow-xl"
+                aria-label="Play official trailer"
+              >
+                <img
+                  src={event.image}
+                  alt={`${event.title} trailer`}
+                  className="absolute inset-0 w-full h-full object-cover scale-105 group-hover:scale-110 transition-transform duration-700"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-foreground/90 via-foreground/40 to-foreground/10" />
+                {/* Animated rings around play button */}
+                <span className="absolute inset-0 flex items-center justify-center">
+                  <span className="absolute w-24 h-24 rounded-full bg-primary/30 animate-ping" />
+                  <span className="relative w-20 h-20 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-2xl">
+                    <Play className="w-8 h-8 ml-1" fill="currentColor" strokeWidth={0} />
+                  </span>
+                </span>
+                <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-6 text-left text-background">
+                  <span className="inline-block px-2.5 py-1 rounded-full bg-primary text-primary-foreground text-[10px] font-black uppercase tracking-wider mb-2">
+                    Official Trailer • 2:14
+                  </span>
+                  <div className="text-xl sm:text-2xl font-black tracking-tight">
+                    {event.title}
+                  </div>
+                  <div className="text-sm text-background/80 font-medium">
+                    A first look at the production, the setlist, and the stage.
+                  </div>
+                </div>
+              </motion.button>
+
+              {/* Video Clip Grid */}
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
+                {videoClips.map((clip, i) => (
+                  <motion.button
+                    key={clip.title}
+                    onClick={() => handlePlay(clip.title)}
+                    initial={{ opacity: 0, y: 12 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.05, duration: 0.35 }}
+                    whileHover={{ y: -3 }}
+                    className="group relative aspect-video rounded-2xl overflow-hidden border border-border bg-gradient-to-br from-primary/20 via-card to-accent/20 text-left"
+                    aria-label={`Play ${clip.title}`}
+                  >
+                    {/* abstract motion lines as a "video poster" placeholder */}
+                    <div className="absolute inset-0 opacity-60">
+                      <div className="absolute -top-10 -left-10 w-40 h-40 rounded-full bg-primary/40 blur-3xl" />
+                      <div className="absolute -bottom-10 -right-10 w-40 h-40 rounded-full bg-accent/40 blur-3xl" />
+                    </div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-foreground/20 to-transparent" />
+                    <div className="absolute top-3 left-3">
+                      <span className="px-2 py-0.5 rounded-full bg-background/90 text-foreground text-[10px] font-black uppercase tracking-wider">
+                        {clip.tag}
+                      </span>
+                    </div>
+                    <div className="absolute top-3 right-3 px-2 py-0.5 rounded bg-foreground/70 text-background text-[10px] font-bold">
+                      {clip.duration}
+                    </div>
+                    <span className="absolute inset-0 flex items-center justify-center">
+                      <span className="w-12 h-12 rounded-full bg-background/90 text-foreground flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                        <Play className="w-5 h-5 ml-0.5" fill="currentColor" strokeWidth={0} />
+                      </span>
+                    </span>
+                    <div className="absolute bottom-3 left-3 right-3 text-background">
+                      <div className="text-sm font-black tracking-tight leading-tight">
+                        {clip.title}
+                      </div>
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
+            </div>
+
+            {/* Fan Reels — vertical video placeholders */}
+            <div>
+              <div className="flex items-end justify-between mb-4">
+                <div>
+                  <div className="flex items-center gap-2 text-xs font-bold text-accent uppercase tracking-wider mb-1">
+                    <Sparkles className="w-3.5 h-3.5" /> Fan Reels
+                  </div>
+                  <h2 className="text-2xl font-black tracking-tight">From the crowd</h2>
+                </div>
+                <span className="text-xs font-bold text-muted-foreground">Auto-curated</span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {fanReels.map((reel, i) => (
+                  <motion.button
+                    key={reel.handle}
+                    onClick={() => handlePlay(`Reel by ${reel.handle}`)}
+                    initial={{ opacity: 0, y: 12 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.06, duration: 0.35 }}
+                    whileHover={{ y: -3 }}
+                    className="group relative aspect-[9/16] rounded-2xl overflow-hidden border border-border text-left"
+                    aria-label={`Play reel from ${reel.handle}`}
+                  >
+                    <div
+                      className="absolute inset-0"
+                      style={{
+                        background:
+                          i % 2 === 0
+                            ? "linear-gradient(160deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%)"
+                            : "linear-gradient(160deg, hsl(var(--accent)) 0%, hsl(var(--foreground)) 100%)",
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-foreground/20" />
+                    <div className="absolute inset-0 mix-blend-overlay opacity-40">
+                      <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-background/40 blur-2xl" />
+                      <div className="absolute -bottom-8 -left-8 w-28 h-28 rounded-full bg-foreground/40 blur-2xl" />
+                    </div>
+                    <span className="absolute inset-0 flex items-center justify-center">
+                      <span className="w-11 h-11 rounded-full bg-background/90 text-foreground flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                        <Play className="w-4 h-4 ml-0.5" fill="currentColor" strokeWidth={0} />
+                      </span>
+                    </span>
+                    <div className="absolute bottom-3 left-3 right-3 text-background">
+                      <div className="text-xs font-black">{reel.handle}</div>
+                      <div className="text-[11px] font-medium text-background/80 line-clamp-2">
+                        {reel.caption}
+                      </div>
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
             </div>
 
             <div>
