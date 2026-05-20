@@ -14,6 +14,7 @@ export interface EventItem {
   price: string;
   badge?: string;
   description: string;
+  category: "Concerts" | "Sports" | "Theater" | "Comedy" | "Festivals";
 }
 
 export const events: EventItem[] = [
@@ -27,6 +28,7 @@ export const events: EventItem[] = [
     badge: "On Sale Now",
     description:
       "Experience The Weeknd live as he brings his After Hours World Tour to Madison Square Garden. A spectacular production with stunning visuals and unforgettable hits.",
+    category: "Concerts",
   },
   {
     id: "nba-lakers-celtics",
@@ -38,6 +40,7 @@ export const events: EventItem[] = [
     badge: "Low Tickets",
     description:
       "The greatest rivalry in basketball returns. Witness the Lakers and Celtics battle it out in this must-see playoff matchup.",
+    category: "Sports",
   },
   {
     id: "hamilton-broadway",
@@ -48,6 +51,7 @@ export const events: EventItem[] = [
     price: "$199",
     description:
       "The story of America then, told by America now. Lin-Manuel Miranda's Tony-winning masterpiece on its original Broadway stage.",
+    category: "Theater",
   },
   {
     id: "foo-fighters-last-stand",
@@ -58,6 +62,7 @@ export const events: EventItem[] = [
     price: "$75",
     description:
       "Dave Grohl and the Foo Fighters take Wembley Stadium for one unforgettable night of stadium rock anthems.",
+    category: "Concerts",
   },
   {
     id: "calvin-harris-summerfest",
@@ -69,6 +74,7 @@ export const events: EventItem[] = [
     badge: "Just Announced",
     description:
       "Calvin Harris headlines Summerfest with a massive open-air production featuring world-class lighting, lasers, and non-stop hits.",
+    category: "Festivals",
   },
   {
     id: "john-mulaney-chicago",
@@ -79,6 +85,7 @@ export const events: EventItem[] = [
     price: "$65",
     description:
       "Emmy-winning comedian John Mulaney returns to his hometown for a night of brand-new stand-up at the historic Chicago Theatre.",
+    category: "Comedy",
   },
 ];
 
