@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Music, Trophy, Drama, Laugh, Zap, PartyPopper } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -11,9 +10,12 @@ const categories = [
   { label: "Festivals", icon: PartyPopper },
 ];
 
-const CategoryPills = () => {
-  const [active, setActive] = useState("All Events");
+interface CategoryPillsProps {
+  active?: string;
+  onChange?: (value: string) => void;
+}
 
+const CategoryPills = ({ active = "All Events", onChange }: CategoryPillsProps) => {
   return (
     <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
       {categories.map((cat) => {
@@ -22,7 +24,7 @@ const CategoryPills = () => {
         return (
           <button
             key={cat.label}
-            onClick={() => setActive(cat.label)}
+            onClick={() => onChange?.(cat.label)}
             className={`relative flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold whitespace-nowrap transition-colors ${
               isActive
                 ? "text-primary-foreground"
