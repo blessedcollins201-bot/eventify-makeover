@@ -301,6 +301,21 @@ const EventDetail = () => {
 
             <div>
               <h2 className="text-2xl font-black tracking-tight mb-4">Select your seats</h2>
+
+              {/* Interactive seating chart */}
+              <div className="mb-5">
+                <SeatingMap
+                  tiers={tiers.map((t) => ({
+                    id: t.id,
+                    name: t.name,
+                    color: t.color,
+                    price: t.price,
+                  }))}
+                  activeTierId={tierId}
+                  onSelectTier={setTierId}
+                />
+              </div>
+
               <div className="grid sm:grid-cols-2 gap-3">
                 {tiers.map((t) => {
                   const active = t.id === tierId;
@@ -315,7 +330,13 @@ const EventDetail = () => {
                       }`}
                     >
                       <div className="flex items-start justify-between gap-3 mb-1">
-                        <span className="font-bold text-foreground">{t.name}</span>
+                        <span className="flex items-center gap-2 font-bold text-foreground">
+                          <span
+                            className="w-2.5 h-2.5 rounded-sm"
+                            style={{ background: t.color }}
+                          />
+                          {t.name}
+                        </span>
                         {active && (
                           <span className="shrink-0 inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground">
                             <Check className="w-3 h-3" strokeWidth={3} />
@@ -396,6 +417,28 @@ const EventDetail = () => {
               </div>
             </div>
           </aside>
+        </div>
+      </section>
+
+      {/* You may also like */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+        <div className="flex items-end justify-between mb-6">
+          <div>
+            <div className="text-xs font-bold uppercase tracking-wider text-accent mb-1">
+              Keep exploring
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-black tracking-tight">
+              You may also like
+            </h2>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {events
+            .filter((e) => e.id !== event.id)
+            .slice(0, 3)
+            .map((e, i) => (
+              <EventCard key={e.id} {...e} index={i} />
+            ))}
         </div>
       </section>
 
