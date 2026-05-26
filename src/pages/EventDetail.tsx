@@ -74,6 +74,49 @@ const EventDetail = () => {
   const fees = subtotal * SERVICE_FEE_RATE;
   const total = subtotal + fees;
 
+  const relatedEvents = useMemo(() => {
+    if (!event) return [];
+
+    const cityOf = (venue: string) =>
+      venue.split(",").pop()?.trim().toLowerCase() ?? "";
+    const parseDate = (d: string) => {
+      const t = Date.parse(d.split("•")[0].trim());
+      return Number.isNaN(t) ? 0 : t;
+    };
+
+    const baseCity = cityOf(event.venue);
+    const baseDate = parseDate(event.date);
+
+    return events
+      .filter((e) => e.id !== event.id)
+      .map((e) => {
+        const sameCategory = e.category === event.category;
+        const sameCity = cityOf(e.venue) === baseCity;
+        const daysApart = baseDate
+          ? Math.abs(parseDate(e.date) - baseDate) / 86400000
+          : 365;
+        // closer in time scores higher (1.0 same day → ~0 at 180d)
+        const proximity = Math.max(0, 1 - daysApart / 180);
+        const popularity = (e.popularity ?? 50) / 100;
+
+        const score =
+          (sameCategory ? 5 : 0) +
+          (sameCity ? 2.5 : 0) +
+          proximity * 2 +
+          popularity * 1.5;
+
+        const reasons: string[] = [];
+        if (sameCategory) reasons.push(`More ${e.category}`);
+        if (sameCity) reasons.push("Near you");
+        if (proximity > 0.7) reasons.push("Around the same time");
+        if (popularity > 0.85) reasons.push("Trending");
+
+        return { event: e, score, reason: reasons[0] ?? "Popular pick" };
+      })
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3);
+  }, [event]);
+
   if (!event) {
     return (
       <div className="min-h-screen bg-background">
@@ -430,15 +473,20 @@ const EventDetail = () => {
             <h2 className="text-2xl sm:text-3xl font-black tracking-tight">
               You may also like
             </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Ranked by category, location & date proximity, and popularity
+            </p>
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {events
-            .filter((e) => e.id !== event.id)
-            .slice(0, 3)
-            .map((e, i) => (
-              <EventCard key={e.id} {...e} index={i} />
-            ))}
+          {relatedEvents.map(({ event: e, reason }, i) => (
+            <div key={e.id} className="relative">
+              <div className="absolute z-10 top-3 left-3 px-2.5 py-1 rounded-full bg-background/90 backdrop-blur border border-border text-[10px] font-bold uppercase tracking-wider text-foreground shadow-sm">
+                {reason}
+              </div>
+              <EventCard {...e} index={i} />
+            </div>
+          ))}
         </div>
       </section>
 
