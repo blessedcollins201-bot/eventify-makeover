@@ -473,15 +473,20 @@ const EventDetail = () => {
             <h2 className="text-2xl sm:text-3xl font-black tracking-tight">
               You may also like
             </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Ranked by category, location & date proximity, and popularity
+            </p>
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {events
-            .filter((e) => e.id !== event.id)
-            .slice(0, 3)
-            .map((e, i) => (
-              <EventCard key={e.id} {...e} index={i} />
-            ))}
+          {relatedEvents.map(({ event: e, reason }, i) => (
+            <div key={e.id} className="relative">
+              <div className="absolute z-10 top-3 left-3 px-2.5 py-1 rounded-full bg-background/90 backdrop-blur border border-border text-[10px] font-bold uppercase tracking-wider text-foreground shadow-sm">
+                {reason}
+              </div>
+              <EventCard {...e} index={i} />
+            </div>
+          ))}
         </div>
       </section>
 
