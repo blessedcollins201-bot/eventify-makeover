@@ -74,6 +74,49 @@ const EventDetail = () => {
   const fees = subtotal * SERVICE_FEE_RATE;
   const total = subtotal + fees;
 
+  const relatedEvents = useMemo(() => {
+    if (!event) return [];
+
+    const cityOf = (venue: string) =>
+      venue.split(",").pop()?.trim().toLowerCase() ?? "";
+    const parseDate = (d: string) => {
+      const t = Date.parse(d.split("•")[0].trim());
+      return Number.isNaN(t) ? 0 : t;
+    };
+
+    const baseCity = cityOf(event.venue);
+    const baseDate = parseDate(event.date);
+
+    return events
+      .filter((e) => e.id !== event.id)
+      .map((e) => {
+        const sameCategory = e.category === event.category;
+        const sameCity = cityOf(e.venue) === baseCity;
+        const daysApart = baseDate
+          ? Math.abs(parseDate(e.date) - baseDate) / 86400000
+          : 365;
+        // closer in time scores higher (1.0 same day → ~0 at 180d)
+        const proximity = Math.max(0, 1 - daysApart / 180);
+        const popularity = (e.popularity ?? 50) / 100;
+
+        const score =
+          (sameCategory ? 5 : 0) +
+          (sameCity ? 2.5 : 0) +
+          proximity * 2 +
+          popularity * 1.5;
+
+        const reasons: string[] = [];
+        if (sameCategory) reasons.push(`More ${e.category}`);
+        if (sameCity) reasons.push("Near you");
+        if (proximity > 0.7) reasons.push("Around the same time");
+        if (popularity > 0.85) reasons.push("Trending");
+
+        return { event: e, score, reason: reasons[0] ?? "Popular pick" };
+      })
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3);
+  }, [event]);
+
   if (!event) {
     return (
       <div className="min-h-screen bg-background">
