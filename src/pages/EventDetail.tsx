@@ -1,21 +1,32 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
+  Accessibility,
+  BadgeCheck,
   Calendar,
   Check,
   Clock,
+  CreditCard,
+  Download,
   Film,
+  HelpCircle,
+  Info,
   MapPin,
   Minus,
   Music2,
+  Navigation,
+  ParkingCircle,
   Play,
   Plus,
   Share2,
   ShieldCheck,
+  Star,
   Sparkles,
   Ticket,
+  Train,
+  Utensils,
   Users,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
@@ -23,6 +34,12 @@ import Footer from "@/components/Footer";
 import { events, getEventById } from "@/data/events";
 import SeatingMap from "@/components/SeatingMap";
 import EventCard from "@/components/EventCard";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { toast } from "sonner";
 
 interface SeatTier {
@@ -63,16 +80,80 @@ const eventStats = [
   { icon: Sparkles, label: "Production", value: "4K visuals" },
 ];
 
+const sectionNav = [
+  { id: "overview", label: "Overview" },
+  { id: "media", label: "Watch" },
+  { id: "lineup", label: "Lineup" },
+  { id: "seats", label: "Seats" },
+  { id: "venue", label: "Venue" },
+  { id: "know", label: "Know before" },
+  { id: "faq", label: "FAQ" },
+  { id: "related", label: "Related" },
+];
+
+const lineup = [
+  { name: "Headliner", role: "Main act", time: "9:30 PM", duration: "90 min" },
+  { name: "Special Guest", role: "Direct support", time: "8:30 PM", duration: "45 min" },
+  { name: "Opening Act", role: "Opener", time: "7:45 PM", duration: "30 min" },
+];
+
+const knowBeforeYouGo = [
+  { icon: Ticket, title: "Mobile tickets only", body: "Tickets are delivered to your wallet 24h before doors." },
+  { icon: BadgeCheck, title: "Age policy", body: "All ages welcome. Under 16 must be accompanied by an adult." },
+  { icon: ShieldCheck, title: "Bag policy", body: "Clear bags up to 12\"×6\"×12\" or small clutches only." },
+  { icon: Accessibility, title: "Accessible seating", body: "Step-free routes, ASL on request, sensory kits at guest services." },
+];
+
+const venueAmenities = [
+  { icon: Train, label: "Transit", value: "2 lines · 3 min walk" },
+  { icon: ParkingCircle, label: "Parking", value: "4 garages within 0.3 mi" },
+  { icon: Utensils, label: "Food & drink", value: "22 vendors on-site" },
+  { icon: Accessibility, label: "Accessibility", value: "Fully ADA compliant" },
+];
+
+const faqs = [
+  { q: "When do doors open?", a: "Doors open 90 minutes before showtime. We recommend arriving early to avoid lines at security." },
+  { q: "What's the refund policy?", a: "All sales are final, but tickets are 100% guaranteed. If the event is cancelled, you'll receive an automatic refund within 14 days." },
+  { q: "Can I transfer my tickets?", a: "Yes — you can transfer mobile tickets to anyone with a free account directly from your order." },
+  { q: "What items are prohibited?", a: "Professional cameras, outside food and drink, laser pointers, and large bags. See the venue page for the full list." },
+  { q: "Is re-entry allowed?", a: "Re-entry is not permitted once you've entered the venue, except for medical emergencies." },
+];
+
+const reviews = [
+  { name: "Jordan P.", rating: 5, body: "The production was on another level. Worth every penny." },
+  { name: "Priya S.", rating: 5, body: "Sound was crisp from the upper deck — incredible value." },
+  { name: "Marcus T.", rating: 4, body: "Crowd was electric. Lines for drinks were long though." },
+];
+
 const EventDetail = () => {
   const { id } = useParams<{ id: string }>();
   const event = id ? getEventById(id) : undefined;
   const [tierId, setTierId] = useState<string>("lower");
   const [qty, setQty] = useState(2);
+  const [activeSection, setActiveSection] = useState<string>("overview");
 
   const tier = useMemo(() => tiers.find((t) => t.id === tierId)!, [tierId]);
   const subtotal = tier.price * qty;
   const fees = subtotal * SERVICE_FEE_RATE;
   const total = subtotal + fees;
+
+  // Track which section is in view for the sticky nav
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (visible) setActiveSection(visible.target.id);
+      },
+      { rootMargin: "-30% 0px -55% 0px", threshold: [0, 0.25, 0.5, 1] },
+    );
+    sectionNav.forEach(({ id }) => {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    });
+    return () => observer.disconnect();
+  }, [event?.id]);
 
   const relatedEvents = useMemo(() => {
     if (!event) return [];
@@ -141,7 +222,7 @@ const EventDetail = () => {
     toast.info(`${title}`, { description: "Video player coming soon." });
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background scroll-smooth">
       <Navbar />
 
       {/* Hero */}
@@ -160,26 +241,62 @@ const EventDetail = () => {
                 {event.badge}
               </span>
             )}
+            <div className="text-xs font-bold uppercase tracking-wider text-primary mb-2">
+              {event.category}
+            </div>
             <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-foreground leading-tight mb-4">
               {event.title}
             </h1>
             <div className="flex flex-wrap gap-x-6 gap-y-2 text-foreground/80 font-medium">
               <div className="flex items-center gap-2"><Calendar className="w-4 h-4" strokeWidth={2.5} /> {event.date}</div>
               <div className="flex items-center gap-2"><MapPin className="w-4 h-4" strokeWidth={2.5} /> {event.venue}</div>
+              <div className="flex items-center gap-2"><Ticket className="w-4 h-4" strokeWidth={2.5} /> From {event.price}</div>
             </div>
           </motion.div>
         </div>
       </section>
 
+      {/* Sticky section nav */}
+      <nav className="sticky top-16 z-30 border-y border-border bg-background/85 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <ul className="flex gap-1 overflow-x-auto no-scrollbar -mx-2 px-2">
+            {sectionNav.map(({ id, label }) => {
+              const active = activeSection === id;
+              return (
+                <li key={id} className="shrink-0">
+                  <a
+                    href={`#${id}`}
+                    className={`relative inline-flex items-center px-3 py-3 text-sm font-bold transition-colors whitespace-nowrap ${
+                      active ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {label}
+                    {active && (
+                      <motion.span
+                        layoutId="section-underline"
+                        className="absolute left-2 right-2 -bottom-px h-0.5 bg-primary rounded-full"
+                      />
+                    )}
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      </nav>
+
       {/* Body */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pb-32 lg:pb-12">
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Left: details + seat selection */}
-          <div className="lg:col-span-2 space-y-10">
-            <div>
+          <div className="lg:col-span-2 space-y-16 scroll-smooth">
+            <section id="overview" className="scroll-mt-32">
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-primary mb-2">
+                <Info className="w-3.5 h-3.5" /> Overview
+              </div>
               <h2 className="text-2xl font-black tracking-tight mb-3">About this event</h2>
-              <p className="text-muted-foreground leading-relaxed">{event.description}</p>
-            </div>
+              <p className="text-muted-foreground leading-relaxed text-base">{event.description}</p>
+            </section>
 
             {/* Stats Strip */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -196,7 +313,7 @@ const EventDetail = () => {
             </div>
 
             {/* Featured Video Player Placeholder */}
-            <div>
+            <section id="media" className="scroll-mt-32">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <div className="flex items-center gap-2 text-xs font-bold text-primary uppercase tracking-wider mb-1">
@@ -286,10 +403,10 @@ const EventDetail = () => {
                   </motion.button>
                 ))}
               </div>
-            </div>
+            </section>
 
             {/* Fan Reels — vertical video placeholders */}
-            <div>
+            <section id="reels" className="scroll-mt-32">
               <div className="flex items-end justify-between mb-4">
                 <div>
                   <div className="flex items-center gap-2 text-xs font-bold text-accent uppercase tracking-wider mb-1">
@@ -340,9 +457,45 @@ const EventDetail = () => {
                   </motion.button>
                 ))}
               </div>
-            </div>
+            </section>
 
-            <div>
+            {/* Lineup / schedule */}
+            <section id="lineup" className="scroll-mt-32">
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-primary mb-2">
+                <Music2 className="w-3.5 h-3.5" /> Lineup &amp; schedule
+              </div>
+              <h2 className="text-2xl font-black tracking-tight mb-4">Who's playing &amp; when</h2>
+              <ol className="relative border-l-2 border-border ml-2 space-y-5">
+                {lineup.map((act, i) => (
+                  <motion.li
+                    key={act.name}
+                    initial={{ opacity: 0, x: -8 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.06 }}
+                    className="pl-5"
+                  >
+                    <span className="absolute -left-[7px] w-3 h-3 rounded-full bg-primary ring-4 ring-background" />
+                    <div className="flex items-baseline justify-between gap-3 flex-wrap">
+                      <div>
+                        <div className="font-black text-foreground">{act.name}</div>
+                        <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                          {act.role}
+                        </div>
+                      </div>
+                      <div className="text-sm font-bold text-foreground">
+                        {act.time} <span className="text-muted-foreground font-medium">· {act.duration}</span>
+                      </div>
+                    </div>
+                  </motion.li>
+                ))}
+              </ol>
+            </section>
+
+            <section id="seats" className="scroll-mt-32">
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-primary mb-2">
+                <Ticket className="w-3.5 h-3.5" /> Pick your seats
+              </div>
               <h2 className="text-2xl font-black tracking-tight mb-4">Select your seats</h2>
 
               {/* Interactive seating chart */}
@@ -395,7 +548,160 @@ const EventDetail = () => {
                   );
                 })}
               </div>
-            </div>
+            </section>
+
+            {/* Venue */}
+            <section id="venue" className="scroll-mt-32">
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-primary mb-2">
+                <MapPin className="w-3.5 h-3.5" /> Venue
+              </div>
+              <h2 className="text-2xl font-black tracking-tight mb-4">{event.venue}</h2>
+              <div className="rounded-3xl overflow-hidden border border-border bg-card">
+                <div className="relative aspect-[16/8] bg-muted overflow-hidden">
+                  {/* Stylized map placeholder */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/15 via-background to-accent/15" />
+                  <svg className="absolute inset-0 w-full h-full opacity-40" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                      <pattern id="map-grid" width="32" height="32" patternUnits="userSpaceOnUse">
+                        <path d="M 32 0 L 0 0 0 32" fill="none" stroke="hsl(var(--border))" strokeWidth="1" />
+                      </pattern>
+                    </defs>
+                    <rect width="100%" height="100%" fill="url(#map-grid)" />
+                  </svg>
+                  <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
+                    <span className="relative flex w-12 h-12 items-center justify-center">
+                      <span className="absolute inset-0 rounded-full bg-primary/30 animate-ping" />
+                      <span className="relative w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-xl">
+                        <MapPin className="w-5 h-5" strokeWidth={2.5} />
+                      </span>
+                    </span>
+                    <span className="mt-2 px-2.5 py-1 rounded-full bg-background/90 backdrop-blur border border-border text-xs font-bold text-foreground shadow">
+                      {event.venue}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => toast.info("Opening directions…")}
+                    className="absolute bottom-4 right-4 inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-foreground text-background text-sm font-bold shadow-lg hover:opacity-90"
+                  >
+                    <Navigation className="w-4 h-4" /> Directions
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-border">
+                  {venueAmenities.map(({ icon: Icon, label, value }) => (
+                    <div key={label} className="p-4">
+                      <Icon className="w-4 h-4 text-primary mb-2" strokeWidth={2.5} />
+                      <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{label}</div>
+                      <div className="text-sm font-bold text-foreground mt-0.5">{value}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            {/* Know before you go */}
+            <section id="know" className="scroll-mt-32">
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-primary mb-2">
+                <Info className="w-3.5 h-3.5" /> Know before you go
+              </div>
+              <h2 className="text-2xl font-black tracking-tight mb-4">The essentials</h2>
+              <div className="grid sm:grid-cols-2 gap-3">
+                {knowBeforeYouGo.map(({ icon: Icon, title, body }) => (
+                  <div key={title} className="rounded-2xl border border-border bg-card p-4 flex gap-3">
+                    <div className="shrink-0 w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                      <Icon className="w-5 h-5" strokeWidth={2.5} />
+                    </div>
+                    <div>
+                      <div className="font-bold text-foreground mb-0.5">{title}</div>
+                      <div className="text-sm text-muted-foreground leading-relaxed">{body}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Reviews */}
+            <section id="reviews" className="scroll-mt-32">
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-accent mb-2">
+                <Star className="w-3.5 h-3.5" /> Fan reviews
+              </div>
+              <div className="flex items-baseline justify-between mb-4 gap-3 flex-wrap">
+                <h2 className="text-2xl font-black tracking-tight">What fans are saying</h2>
+                <div className="flex items-center gap-1.5">
+                  <Star className="w-4 h-4 text-accent" fill="currentColor" strokeWidth={0} />
+                  <span className="font-black text-foreground">4.8</span>
+                  <span className="text-sm text-muted-foreground">· 2,340 reviews</span>
+                </div>
+              </div>
+              <div className="grid sm:grid-cols-3 gap-3">
+                {reviews.map((r) => (
+                  <div key={r.name} className="rounded-2xl border border-border bg-card p-4">
+                    <div className="flex items-center gap-1 mb-2">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`w-3.5 h-3.5 ${i < r.rating ? "text-accent" : "text-muted"}`}
+                          fill="currentColor"
+                          strokeWidth={0}
+                        />
+                      ))}
+                    </div>
+                    <p className="text-sm text-foreground leading-relaxed mb-3">"{r.body}"</p>
+                    <div className="text-xs font-bold text-muted-foreground">{r.name}</div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* FAQ */}
+            <section id="faq" className="scroll-mt-32">
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-primary mb-2">
+                <HelpCircle className="w-3.5 h-3.5" /> FAQ
+              </div>
+              <h2 className="text-2xl font-black tracking-tight mb-4">Frequently asked</h2>
+              <div className="rounded-2xl border border-border bg-card px-5">
+                <Accordion type="single" collapsible className="w-full">
+                  {faqs.map((f, i) => (
+                    <AccordionItem key={f.q} value={`faq-${i}`} className="border-border last:border-b-0">
+                      <AccordionTrigger className="text-left font-bold text-foreground">
+                        {f.q}
+                      </AccordionTrigger>
+                      <AccordionContent className="text-muted-foreground leading-relaxed">
+                        {f.a}
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              </div>
+            </section>
+
+            {/* Resources */}
+            <section id="resources" className="scroll-mt-32">
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-primary mb-2">
+                <Download className="w-3.5 h-3.5" /> Resources
+              </div>
+              <h2 className="text-2xl font-black tracking-tight mb-4">Plan your night</h2>
+              <div className="grid sm:grid-cols-3 gap-3">
+                {[
+                  { icon: MapPin, title: "Venue map (PDF)", meta: "1.2 MB" },
+                  { icon: CreditCard, title: "Box-office policies", meta: "Read" },
+                  { icon: Calendar, title: "Add to calendar", meta: ".ics" },
+                ].map(({ icon: Icon, title, meta }) => (
+                  <button
+                    key={title}
+                    onClick={() => toast.info(title)}
+                    className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4 hover:border-primary/40 hover:bg-primary/5 transition-colors text-left"
+                  >
+                    <span className="flex items-center gap-3">
+                      <span className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                        <Icon className="w-4 h-4" strokeWidth={2.5} />
+                      </span>
+                      <span className="font-bold text-foreground">{title}</span>
+                    </span>
+                    <span className="text-xs font-bold text-muted-foreground">{meta}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
           </div>
 
           {/* Right: checkout sidebar */}
@@ -464,7 +770,7 @@ const EventDetail = () => {
       </section>
 
       {/* You may also like */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+      <section id="related" className="scroll-mt-32 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24 lg:pb-16">
         <div className="flex items-end justify-between mb-6">
           <div>
             <div className="text-xs font-bold uppercase tracking-wider text-accent mb-1">
@@ -489,6 +795,27 @@ const EventDetail = () => {
           ))}
         </div>
       </section>
+
+      {/* Sticky mobile action bar */}
+      <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border bg-background/95 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              {tier.name} · {qty} {qty === 1 ? "ticket" : "tickets"}
+            </div>
+            <div className="text-lg font-black text-foreground leading-none mt-0.5 truncate">
+              ${total.toFixed(2)}
+            </div>
+          </div>
+          <motion.button
+            whileTap={{ scale: 0.96 }}
+            onClick={handleCheckout}
+            className="px-5 py-3 rounded-xl bg-primary text-primary-foreground font-bold shadow-lg flex items-center gap-2"
+          >
+            <Ticket className="w-4 h-4" strokeWidth={2.5} /> Checkout
+          </motion.button>
+        </div>
+      </div>
 
       <Footer />
     </div>
