@@ -80,16 +80,80 @@ const eventStats = [
   { icon: Sparkles, label: "Production", value: "4K visuals" },
 ];
 
+const sectionNav = [
+  { id: "overview", label: "Overview" },
+  { id: "media", label: "Watch" },
+  { id: "lineup", label: "Lineup" },
+  { id: "seats", label: "Seats" },
+  { id: "venue", label: "Venue" },
+  { id: "know", label: "Know before" },
+  { id: "faq", label: "FAQ" },
+  { id: "related", label: "Related" },
+];
+
+const lineup = [
+  { name: "Headliner", role: "Main act", time: "9:30 PM", duration: "90 min" },
+  { name: "Special Guest", role: "Direct support", time: "8:30 PM", duration: "45 min" },
+  { name: "Opening Act", role: "Opener", time: "7:45 PM", duration: "30 min" },
+];
+
+const knowBeforeYouGo = [
+  { icon: Ticket, title: "Mobile tickets only", body: "Tickets are delivered to your wallet 24h before doors." },
+  { icon: BadgeCheck, title: "Age policy", body: "All ages welcome. Under 16 must be accompanied by an adult." },
+  { icon: ShieldCheck, title: "Bag policy", body: "Clear bags up to 12\"×6\"×12\" or small clutches only." },
+  { icon: Accessibility, title: "Accessible seating", body: "Step-free routes, ASL on request, sensory kits at guest services." },
+];
+
+const venueAmenities = [
+  { icon: Train, label: "Transit", value: "2 lines · 3 min walk" },
+  { icon: ParkingCircle, label: "Parking", value: "4 garages within 0.3 mi" },
+  { icon: Utensils, label: "Food & drink", value: "22 vendors on-site" },
+  { icon: Accessibility, label: "Accessibility", value: "Fully ADA compliant" },
+];
+
+const faqs = [
+  { q: "When do doors open?", a: "Doors open 90 minutes before showtime. We recommend arriving early to avoid lines at security." },
+  { q: "What's the refund policy?", a: "All sales are final, but tickets are 100% guaranteed. If the event is cancelled, you'll receive an automatic refund within 14 days." },
+  { q: "Can I transfer my tickets?", a: "Yes — you can transfer mobile tickets to anyone with a free account directly from your order." },
+  { q: "What items are prohibited?", a: "Professional cameras, outside food and drink, laser pointers, and large bags. See the venue page for the full list." },
+  { q: "Is re-entry allowed?", a: "Re-entry is not permitted once you've entered the venue, except for medical emergencies." },
+];
+
+const reviews = [
+  { name: "Jordan P.", rating: 5, body: "The production was on another level. Worth every penny." },
+  { name: "Priya S.", rating: 5, body: "Sound was crisp from the upper deck — incredible value." },
+  { name: "Marcus T.", rating: 4, body: "Crowd was electric. Lines for drinks were long though." },
+];
+
 const EventDetail = () => {
   const { id } = useParams<{ id: string }>();
   const event = id ? getEventById(id) : undefined;
   const [tierId, setTierId] = useState<string>("lower");
   const [qty, setQty] = useState(2);
+  const [activeSection, setActiveSection] = useState<string>("overview");
 
   const tier = useMemo(() => tiers.find((t) => t.id === tierId)!, [tierId]);
   const subtotal = tier.price * qty;
   const fees = subtotal * SERVICE_FEE_RATE;
   const total = subtotal + fees;
+
+  // Track which section is in view for the sticky nav
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (visible) setActiveSection(visible.target.id);
+      },
+      { rootMargin: "-30% 0px -55% 0px", threshold: [0, 0.25, 0.5, 1] },
+    );
+    sectionNav.forEach(({ id }) => {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    });
+    return () => observer.disconnect();
+  }, [event?.id]);
 
   const relatedEvents = useMemo(() => {
     if (!event) return [];
