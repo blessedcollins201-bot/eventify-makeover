@@ -770,7 +770,7 @@ const EventDetail = () => {
       </section>
 
       {/* You may also like */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+      <section id="related" className="scroll-mt-32 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24 lg:pb-16">
         <div className="flex items-end justify-between mb-6">
           <div>
             <div className="text-xs font-bold uppercase tracking-wider text-accent mb-1">
@@ -795,6 +795,27 @@ const EventDetail = () => {
           ))}
         </div>
       </section>
+
+      {/* Sticky mobile action bar */}
+      <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border bg-background/95 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              {tier.name} · {qty} {qty === 1 ? "ticket" : "tickets"}
+            </div>
+            <div className="text-lg font-black text-foreground leading-none mt-0.5 truncate">
+              ${total.toFixed(2)}
+            </div>
+          </div>
+          <motion.button
+            whileTap={{ scale: 0.96 }}
+            onClick={handleCheckout}
+            className="px-5 py-3 rounded-xl bg-primary text-primary-foreground font-bold shadow-lg flex items-center gap-2"
+          >
+            <Ticket className="w-4 h-4" strokeWidth={2.5} /> Checkout
+          </motion.button>
+        </div>
+      </div>
 
       <Footer />
     </div>
