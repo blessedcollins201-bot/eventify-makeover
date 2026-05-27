@@ -1,21 +1,32 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
+  Accessibility,
+  BadgeCheck,
   Calendar,
   Check,
   Clock,
+  CreditCard,
+  Download,
   Film,
+  HelpCircle,
+  Info,
   MapPin,
   Minus,
   Music2,
+  Navigation,
+  ParkingCircle,
   Play,
   Plus,
   Share2,
   ShieldCheck,
+  Star,
   Sparkles,
   Ticket,
+  Train,
+  Utensils,
   Users,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
@@ -23,6 +34,12 @@ import Footer from "@/components/Footer";
 import { events, getEventById } from "@/data/events";
 import SeatingMap from "@/components/SeatingMap";
 import EventCard from "@/components/EventCard";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { toast } from "sonner";
 
 interface SeatTier {
