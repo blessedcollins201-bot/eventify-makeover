@@ -618,8 +618,8 @@ const InfoPage = () => {
                 </Link>
               </div>
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {relatedEvents.slice(0, 3).map((e) => (
-                  <EventCard key={e.id} event={e} />
+                {relatedEvents.slice(0, 3).map((e, i) => (
+                  <EventCard key={e.id} {...e} index={i} />
                 ))}
               </div>
             </div>
