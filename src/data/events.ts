@@ -5,6 +5,13 @@ import eventPop from "@/assets/event-pop.jpg";
 import eventEdm from "@/assets/event-edm.jpg";
 import eventComedy from "@/assets/event-comedy.jpg";
 
+export type TierId = "vip" | "lower" | "ga" | "upper";
+
+export interface TierInventory {
+  capacity: number;
+  remaining: number;
+}
+
 export interface EventItem {
   id: string;
   image: string;
@@ -16,6 +23,8 @@ export interface EventItem {
   description: string;
   category: "Concerts" | "Sports" | "Theater" | "Comedy" | "Festivals";
   popularity: number; // 0-100
+  /** Per-tier ticket inventory for this event. Drives the seating map. */
+  inventory: Record<TierId, TierInventory>;
 }
 
 export const events: EventItem[] = [
@@ -31,6 +40,12 @@ export const events: EventItem[] = [
       "Experience The Weeknd live as he brings his After Hours World Tour to Madison Square Garden. A spectacular production with stunning visuals and unforgettable hits.",
     category: "Concerts",
     popularity: 96,
+    inventory: {
+      vip:   { capacity: 80,   remaining: 6 },
+      lower: { capacity: 960,  remaining: 142 },
+      ga:    { capacity: 400,  remaining: 88 },
+      upper: { capacity: 1800, remaining: 612 },
+    },
   },
   {
     id: "nba-lakers-celtics",
@@ -44,6 +59,12 @@ export const events: EventItem[] = [
       "The greatest rivalry in basketball returns. Witness the Lakers and Celtics battle it out in this must-see playoff matchup.",
     category: "Sports",
     popularity: 92,
+    inventory: {
+      vip:   { capacity: 80,   remaining: 0 },
+      lower: { capacity: 960,  remaining: 38 },
+      ga:    { capacity: 0,    remaining: 0 },
+      upper: { capacity: 1800, remaining: 214 },
+    },
   },
   {
     id: "hamilton-broadway",
@@ -56,6 +77,12 @@ export const events: EventItem[] = [
       "The story of America then, told by America now. Lin-Manuel Miranda's Tony-winning masterpiece on its original Broadway stage.",
     category: "Theater",
     popularity: 81,
+    inventory: {
+      vip:   { capacity: 40,  remaining: 4 },
+      lower: { capacity: 600, remaining: 96 },
+      ga:    { capacity: 0,   remaining: 0 },
+      upper: { capacity: 700, remaining: 188 },
+    },
   },
   {
     id: "foo-fighters-last-stand",
@@ -68,6 +95,12 @@ export const events: EventItem[] = [
       "Dave Grohl and the Foo Fighters take Wembley Stadium for one unforgettable night of stadium rock anthems.",
     category: "Concerts",
     popularity: 88,
+    inventory: {
+      vip:   { capacity: 120,  remaining: 22 },
+      lower: { capacity: 1200, remaining: 410 },
+      ga:    { capacity: 800,  remaining: 305 },
+      upper: { capacity: 2400, remaining: 1180 },
+    },
   },
   {
     id: "calvin-harris-summerfest",
@@ -81,6 +114,12 @@ export const events: EventItem[] = [
       "Calvin Harris headlines Summerfest with a massive open-air production featuring world-class lighting, lasers, and non-stop hits.",
     category: "Festivals",
     popularity: 84,
+    inventory: {
+      vip:   { capacity: 200,  remaining: 175 },
+      lower: { capacity: 600,  remaining: 540 },
+      ga:    { capacity: 3000, remaining: 2480 },
+      upper: { capacity: 0,    remaining: 0 },
+    },
   },
   {
     id: "john-mulaney-chicago",
@@ -93,6 +132,12 @@ export const events: EventItem[] = [
       "Emmy-winning comedian John Mulaney returns to his hometown for a night of brand-new stand-up at the historic Chicago Theatre.",
     category: "Comedy",
     popularity: 73,
+    inventory: {
+      vip:   { capacity: 30,  remaining: 2 },
+      lower: { capacity: 500, remaining: 64 },
+      ga:    { capacity: 0,   remaining: 0 },
+      upper: { capacity: 900, remaining: 312 },
+    },
   },
 ];
 

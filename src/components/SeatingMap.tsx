@@ -1,20 +1,26 @@
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import type { TierId, TierInventory } from "@/data/events";
 
-export interface SeatSection {
+/** Static venue topology — capacity/remaining come from event inventory at runtime. */
+interface SectionTopology {
   id: string;
   label: string;
-  tierId: string;
-  /** SVG path for the section shape */
+  tierId: TierId;
   d: string;
-  /** Total seats in this section */
+  /** Relative size of this section within its tier (used to distribute capacity). */
+  weight: number;
+  /** 0–1, higher = better view → sells out first. */
+  appeal: number;
+}
+
+export interface SeatSection extends SectionTopology {
   capacity: number;
-  /** Seats still available */
   remaining: number;
 }
 
 export interface SeatTierMeta {
-  id: string;
+  id: TierId;
   name: string;
   color: string; // hsl var reference
   price: number;
@@ -23,54 +29,129 @@ export interface SeatTierMeta {
 interface SeatingMapProps {
   tiers: SeatTierMeta[];
   activeTierId: string;
-  onSelectTier: (tierId: string) => void;
+  onSelectTier: (tierId: TierId) => void;
+  /** Per-tier inventory for this specific event. */
+  inventory: Record<TierId, TierInventory>;
 }
 
 /**
- * Stylized bowl-style venue seating chart.
- * Sections are grouped by tier — clicking any section selects that tier.
+ * Static bowl-style venue topology. Capacity weight + appeal determine how each
+ * event's per-tier inventory is distributed across sections — premium seats
+ * (higher appeal) sell out first.
  */
-const sections: SeatSection[] = [
+const topology: SectionTopology[] = [
   // VIP — pit, immediately in front of stage
-  { id: "pit-l", tierId: "vip", label: "Pit L", d: "M180,120 L260,120 L260,170 L180,170 Z", capacity: 40, remaining: 6 },
-  { id: "pit-r", tierId: "vip", label: "Pit R", d: "M270,120 L350,120 L350,170 L270,170 Z", capacity: 40, remaining: 0 },
+  { id: "pit-l", tierId: "vip", label: "Pit L", d: "M180,120 L260,120 L260,170 L180,170 Z", weight: 1, appeal: 0.95 },
+  { id: "pit-r", tierId: "vip", label: "Pit R", d: "M270,120 L350,120 L350,170 L270,170 Z", weight: 1, appeal: 1.0 },
 
   // GA — floor
-  { id: "ga-1", tierId: "ga", label: "Floor A", d: "M170,180 L260,180 L260,240 L160,240 Z", capacity: 200, remaining: 84 },
-  { id: "ga-2", tierId: "ga", label: "Floor B", d: "M270,180 L360,180 L370,240 L270,240 Z", capacity: 200, remaining: 58 },
+  { id: "ga-1", tierId: "ga", label: "Floor A", d: "M170,180 L260,180 L260,240 L160,240 Z", weight: 1, appeal: 0.8 },
+  { id: "ga-2", tierId: "ga", label: "Floor B", d: "M270,180 L360,180 L370,240 L270,240 Z", weight: 1, appeal: 0.85 },
 
   // Lower bowl — curved sections
-  { id: "low-1", tierId: "lower", label: "101", d: "M90,170 L160,180 L150,250 L70,235 Z", capacity: 120, remaining: 22 },
-  { id: "low-2", tierId: "lower", label: "103", d: "M70,245 L155,260 L165,320 L75,310 Z", capacity: 120, remaining: 0 },
-  { id: "low-3", tierId: "lower", label: "105", d: "M80,320 L170,330 L200,380 L110,380 Z", capacity: 120, remaining: 14 },
-  { id: "low-4", tierId: "lower", label: "107", d: "M210,385 L320,385 L320,425 L210,425 Z", capacity: 140, remaining: 76 },
-  { id: "low-5", tierId: "lower", label: "109", d: "M330,385 L420,380 L450,380 L360,425 L330,425 Z", capacity: 140, remaining: 9 },
-  { id: "low-6", tierId: "lower", label: "111", d: "M370,330 L460,320 L450,380 L365,380 Z", capacity: 120, remaining: 0 },
-  { id: "low-7", tierId: "lower", label: "113", d: "M375,260 L460,245 L460,310 L370,320 Z", capacity: 120, remaining: 41 },
-  { id: "low-8", tierId: "lower", label: "115", d: "M370,180 L460,170 L460,235 L375,250 Z", capacity: 120, remaining: 63 },
+  { id: "low-1", tierId: "lower", label: "101", d: "M90,170 L160,180 L150,250 L70,235 Z", weight: 1.0, appeal: 0.7 },
+  { id: "low-2", tierId: "lower", label: "103", d: "M70,245 L155,260 L165,320 L75,310 Z", weight: 1.0, appeal: 0.5 },
+  { id: "low-3", tierId: "lower", label: "105", d: "M80,320 L170,330 L200,380 L110,380 Z", weight: 1.0, appeal: 0.4 },
+  { id: "low-4", tierId: "lower", label: "107", d: "M210,385 L320,385 L320,425 L210,425 Z", weight: 1.15, appeal: 0.3 },
+  { id: "low-5", tierId: "lower", label: "109", d: "M330,385 L420,380 L450,380 L360,425 L330,425 Z", weight: 1.15, appeal: 0.35 },
+  { id: "low-6", tierId: "lower", label: "111", d: "M370,330 L460,320 L450,380 L365,380 Z", weight: 1.0, appeal: 0.45 },
+  { id: "low-7", tierId: "lower", label: "113", d: "M375,260 L460,245 L460,310 L370,320 Z", weight: 1.0, appeal: 0.55 },
+  { id: "low-8", tierId: "lower", label: "115", d: "M370,180 L460,170 L460,235 L375,250 Z", weight: 1.0, appeal: 0.75 },
 
   // Upper deck — outer ring
-  { id: "up-1", tierId: "upper", label: "301", d: "M30,160 L80,165 L60,250 L20,235 Z", capacity: 180, remaining: 132 },
-  { id: "up-2", tierId: "upper", label: "303", d: "M20,245 L65,260 L70,330 L25,315 Z", capacity: 180, remaining: 108 },
-  { id: "up-3", tierId: "upper", label: "305", d: "M30,340 L80,335 L105,400 L55,410 Z", capacity: 180, remaining: 0 },
-  { id: "up-4", tierId: "upper", label: "307", d: "M115,405 L210,430 L210,460 L120,455 Z", capacity: 180, remaining: 91 },
-  { id: "up-5", tierId: "upper", label: "309", d: "M220,435 L320,435 L320,470 L220,470 Z", capacity: 180, remaining: 156 },
-  { id: "up-6", tierId: "upper", label: "311", d: "M330,435 L420,430 L420,460 L330,470 Z", capacity: 180, remaining: 17 },
-  { id: "up-7", tierId: "upper", label: "313", d: "M430,405 L490,400 L480,455 L420,460 Z", capacity: 180, remaining: 74 },
-  { id: "up-8", tierId: "upper", label: "315", d: "M460,340 L510,335 L515,410 L470,410 Z", capacity: 180, remaining: 0 },
-  { id: "up-9", tierId: "upper", label: "317", d: "M465,250 L515,235 L520,315 L470,330 Z", capacity: 180, remaining: 122 },
-  { id: "up-10", tierId: "upper", label: "319", d: "M460,165 L510,160 L520,235 L470,245 Z", capacity: 180, remaining: 48 },
+  { id: "up-1",  tierId: "upper", label: "301", d: "M30,160 L80,165 L60,250 L20,235 Z", weight: 1, appeal: 0.7 },
+  { id: "up-2",  tierId: "upper", label: "303", d: "M20,245 L65,260 L70,330 L25,315 Z", weight: 1, appeal: 0.55 },
+  { id: "up-3",  tierId: "upper", label: "305", d: "M30,340 L80,335 L105,400 L55,410 Z", weight: 1, appeal: 0.4 },
+  { id: "up-4",  tierId: "upper", label: "307", d: "M115,405 L210,430 L210,460 L120,455 Z", weight: 1, appeal: 0.25 },
+  { id: "up-5",  tierId: "upper", label: "309", d: "M220,435 L320,435 L320,470 L220,470 Z", weight: 1, appeal: 0.2 },
+  { id: "up-6",  tierId: "upper", label: "311", d: "M330,435 L420,430 L420,460 L330,470 Z", weight: 1, appeal: 0.3 },
+  { id: "up-7",  tierId: "upper", label: "313", d: "M430,405 L490,400 L480,455 L420,460 Z", weight: 1, appeal: 0.45 },
+  { id: "up-8",  tierId: "upper", label: "315", d: "M460,340 L510,335 L515,410 L470,410 Z", weight: 1, appeal: 0.5 },
+  { id: "up-9",  tierId: "upper", label: "317", d: "M465,250 L515,235 L520,315 L470,330 Z", weight: 1, appeal: 0.6 },
+  { id: "up-10", tierId: "upper", label: "319", d: "M460,165 L510,160 L520,235 L470,245 Z", weight: 1, appeal: 0.75 },
 ];
+
+/**
+ * Distribute a tier's total capacity & remaining across its sections.
+ * - Capacity is split by `weight` (rounded, residual to the highest-weight section).
+ * - Sold seats fill highest-appeal sections first so the best seats go first.
+ */
+function distributeTier(
+  sections: SectionTopology[],
+  tierCapacity: number,
+  tierRemaining: number,
+): Map<string, { capacity: number; remaining: number }> {
+  const result = new Map<string, { capacity: number; remaining: number }>();
+  if (sections.length === 0) return result;
+
+  const totalWeight = sections.reduce((s, x) => s + x.weight, 0) || 1;
+  const capacities = sections.map((s) =>
+    Math.max(0, Math.floor((s.weight / totalWeight) * tierCapacity)),
+  );
+  // Push capacity residual into the highest-weight section
+  let residual = tierCapacity - capacities.reduce((a, b) => a + b, 0);
+  if (residual !== 0) {
+    const idx = sections.reduce(
+      (best, s, i) => (s.weight > sections[best].weight ? i : best),
+      0,
+    );
+    capacities[idx] += residual;
+  }
+
+  const clampedCap = Math.max(0, Math.min(tierCapacity, tierRemaining));
+  let sold = tierCapacity - clampedCap;
+
+  // Sell highest-appeal sections first.
+  const order = sections
+    .map((s, i) => ({ i, appeal: s.appeal }))
+    .sort((a, b) => b.appeal - a.appeal);
+
+  const remainingPerIdx = capacities.slice();
+  for (const { i } of order) {
+    if (sold <= 0) break;
+    const take = Math.min(remainingPerIdx[i], sold);
+    remainingPerIdx[i] -= take;
+    sold -= take;
+  }
+
+  sections.forEach((s, i) => {
+    result.set(s.id, { capacity: capacities[i], remaining: remainingPerIdx[i] });
+  });
+  return result;
+}
 
 type Availability = "sold-out" | "low" | "available";
 const getAvailability = (s: SeatSection): Availability => {
-  if (s.remaining <= 0) return "sold-out";
+  if (s.capacity <= 0 || s.remaining <= 0) return "sold-out";
   if (s.remaining / s.capacity <= 0.15) return "low";
   return "available";
 };
 
-const SeatingMap = ({ tiers, activeTierId, onSelectTier }: SeatingMapProps) => {
+const SeatingMap = ({ tiers, activeTierId, onSelectTier, inventory }: SeatingMapProps) => {
   const [hovered, setHovered] = useState<string | null>(null);
+
+  // Derive per-section capacity & remaining from the event's tier inventory.
+  const sections = useMemo<SeatSection[]>(() => {
+    const byTier = new Map<TierId, SectionTopology[]>();
+    topology.forEach((t) => {
+      const arr = byTier.get(t.tierId) ?? [];
+      arr.push(t);
+      byTier.set(t.tierId, arr);
+    });
+    const merged = new Map<string, { capacity: number; remaining: number }>();
+    byTier.forEach((tierSections, tierId) => {
+      const inv = inventory[tierId] ?? { capacity: 0, remaining: 0 };
+      const dist = distributeTier(tierSections, inv.capacity, inv.remaining);
+      dist.forEach((v, k) => merged.set(k, v));
+    });
+    return topology
+      .map((t) => {
+        const m = merged.get(t.id) ?? { capacity: 0, remaining: 0 };
+        return { ...t, capacity: m.capacity, remaining: m.remaining };
+      })
+      // Hide sections for tiers with zero capacity at this event
+      .filter((s) => s.capacity > 0);
+  }, [inventory]);
 
   const getColor = (tierId: string) => {
     const t = tiers.find((tier) => tier.id === tierId);
