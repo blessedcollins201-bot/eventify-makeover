@@ -475,6 +475,9 @@ const SeatingMap = ({ tiers, activeTierId, onSelectTier, inventory }: SeatingMap
             const soldOut = avail === "sold-out";
             const low = avail === "low";
             const tierColor = getColor(s.tierId);
+            const matches = matchesFilters(s);
+            const dimmed = filtersActive && !matches;
+            const interactive = !soldOut && matches;
             return (
               <g key={s.id}>
                 <motion.path
@@ -484,24 +487,28 @@ const SeatingMap = ({ tiers, activeTierId, onSelectTier, inventory }: SeatingMap
                   strokeWidth={2}
                   initial={false}
                   animate={{
-                    opacity: soldOut
+                    opacity: dimmed
+                      ? 0.15
+                      : soldOut
                       ? 0.85
                       : isActive
                       ? 1
                       : isHovered
                       ? 0.95
                       : 0.55,
-                    scale: !soldOut && isHovered ? 1.02 : 1,
+                    scale: interactive && isHovered ? 1.02 : 1,
                   }}
                   style={{ transformOrigin: "center", transformBox: "fill-box" }}
-                  whileTap={soldOut ? undefined : { scale: 0.97 }}
-                  className={soldOut ? "cursor-not-allowed" : "cursor-pointer"}
-                  onMouseEnter={() => setHovered(s.id)}
+                  whileTap={interactive ? { scale: 0.97 } : undefined}
+                  className={
+                    interactive ? "cursor-pointer" : "cursor-not-allowed"
+                  }
+                  onMouseEnter={() => !dimmed && setHovered(s.id)}
                   onMouseLeave={() => setHovered(null)}
-                  onClick={() => !soldOut && onSelectTier(s.tierId)}
+                  onClick={() => interactive && onSelectTier(s.tierId)}
                 />
                 {/* Low-availability pulse ring */}
-                {low && (
+                {low && !dimmed && (
                   <motion.path
                     d={s.d}
                     fill="none"
@@ -520,11 +527,14 @@ const SeatingMap = ({ tiers, activeTierId, onSelectTier, inventory }: SeatingMap
                   className={`pointer-events-none ${
                     soldOut ? "fill-muted-foreground" : "fill-primary-foreground"
                   }`}
-                  style={{ font: "700 10px Inter, sans-serif" }}
+                  style={{
+                    font: "700 10px Inter, sans-serif",
+                    opacity: dimmed ? 0.25 : 1,
+                  }}
                 >
                   {s.label}
                 </text>
-                {low && (
+                {low && !dimmed && (
                   <text
                     x={getCenterX(s.d)}
                     y={getCenterY(s.d) + 11}
