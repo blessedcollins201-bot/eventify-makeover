@@ -1,6 +1,9 @@
 import { motion } from "framer-motion";
 import { useMemo, useState } from "react";
 import type { TierId, TierInventory } from "@/data/events";
+import { Accessibility, Beer, Filter, Users, Utensils, X } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 
 /** Static venue topology — capacity/remaining come from event inventory at runtime. */
 interface SectionTopology {
@@ -12,6 +15,8 @@ interface SectionTopology {
   weight: number;
   /** 0–1, higher = better view → sells out first. */
   appeal: number;
+  /** Amenities/accessibility flags exposed via filters. */
+  amenities: AmenityId[];
 }
 
 export interface SeatSection extends SectionTopology {
@@ -25,6 +30,23 @@ export interface SeatTierMeta {
   color: string; // hsl var reference
   price: number;
 }
+
+export type AmenityId =
+  | "wheelchair"
+  | "aisle"
+  | "covered"
+  | "bar"
+  | "concessions"
+  | "family";
+
+const AMENITY_META: { id: AmenityId; label: string; icon: typeof Accessibility }[] = [
+  { id: "wheelchair", label: "Wheelchair access", icon: Accessibility },
+  { id: "aisle", label: "Aisle seats", icon: Users },
+  { id: "covered", label: "Covered / shaded", icon: Filter },
+  { id: "bar", label: "Bar access", icon: Beer },
+  { id: "concessions", label: "Near concessions", icon: Utensils },
+  { id: "family", label: "Family section", icon: Users },
+];
 
 interface SeatingMapProps {
   tiers: SeatTierMeta[];
@@ -41,34 +63,34 @@ interface SeatingMapProps {
  */
 const topology: SectionTopology[] = [
   // VIP — pit, immediately in front of stage
-  { id: "pit-l", tierId: "vip", label: "Pit L", d: "M180,120 L260,120 L260,170 L180,170 Z", weight: 1, appeal: 0.95 },
-  { id: "pit-r", tierId: "vip", label: "Pit R", d: "M270,120 L350,120 L350,170 L270,170 Z", weight: 1, appeal: 1.0 },
+  { id: "pit-l", tierId: "vip", label: "Pit L", d: "M180,120 L260,120 L260,170 L180,170 Z", weight: 1, appeal: 0.95, amenities: ["bar", "aisle"] },
+  { id: "pit-r", tierId: "vip", label: "Pit R", d: "M270,120 L350,120 L350,170 L270,170 Z", weight: 1, appeal: 1.0, amenities: ["bar"] },
 
   // GA — floor
-  { id: "ga-1", tierId: "ga", label: "Floor A", d: "M170,180 L260,180 L260,240 L160,240 Z", weight: 1, appeal: 0.8 },
-  { id: "ga-2", tierId: "ga", label: "Floor B", d: "M270,180 L360,180 L370,240 L270,240 Z", weight: 1, appeal: 0.85 },
+  { id: "ga-1", tierId: "ga", label: "Floor A", d: "M170,180 L260,180 L260,240 L160,240 Z", weight: 1, appeal: 0.8, amenities: ["concessions"] },
+  { id: "ga-2", tierId: "ga", label: "Floor B", d: "M270,180 L360,180 L370,240 L270,240 Z", weight: 1, appeal: 0.85, amenities: ["concessions", "bar"] },
 
   // Lower bowl — curved sections
-  { id: "low-1", tierId: "lower", label: "101", d: "M90,170 L160,180 L150,250 L70,235 Z", weight: 1.0, appeal: 0.7 },
-  { id: "low-2", tierId: "lower", label: "103", d: "M70,245 L155,260 L165,320 L75,310 Z", weight: 1.0, appeal: 0.5 },
-  { id: "low-3", tierId: "lower", label: "105", d: "M80,320 L170,330 L200,380 L110,380 Z", weight: 1.0, appeal: 0.4 },
-  { id: "low-4", tierId: "lower", label: "107", d: "M210,385 L320,385 L320,425 L210,425 Z", weight: 1.15, appeal: 0.3 },
-  { id: "low-5", tierId: "lower", label: "109", d: "M330,385 L420,380 L450,380 L360,425 L330,425 Z", weight: 1.15, appeal: 0.35 },
-  { id: "low-6", tierId: "lower", label: "111", d: "M370,330 L460,320 L450,380 L365,380 Z", weight: 1.0, appeal: 0.45 },
-  { id: "low-7", tierId: "lower", label: "113", d: "M375,260 L460,245 L460,310 L370,320 Z", weight: 1.0, appeal: 0.55 },
-  { id: "low-8", tierId: "lower", label: "115", d: "M370,180 L460,170 L460,235 L375,250 Z", weight: 1.0, appeal: 0.75 },
+  { id: "low-1", tierId: "lower", label: "101", d: "M90,170 L160,180 L150,250 L70,235 Z", weight: 1.0, appeal: 0.7, amenities: ["aisle", "bar"] },
+  { id: "low-2", tierId: "lower", label: "103", d: "M70,245 L155,260 L165,320 L75,310 Z", weight: 1.0, appeal: 0.5, amenities: ["wheelchair", "aisle"] },
+  { id: "low-3", tierId: "lower", label: "105", d: "M80,320 L170,330 L200,380 L110,380 Z", weight: 1.0, appeal: 0.4, amenities: ["concessions"] },
+  { id: "low-4", tierId: "lower", label: "107", d: "M210,385 L320,385 L320,425 L210,425 Z", weight: 1.15, appeal: 0.3, amenities: ["family", "concessions"] },
+  { id: "low-5", tierId: "lower", label: "109", d: "M330,385 L420,380 L450,380 L360,425 L330,425 Z", weight: 1.15, appeal: 0.35, amenities: ["family"] },
+  { id: "low-6", tierId: "lower", label: "111", d: "M370,330 L460,320 L450,380 L365,380 Z", weight: 1.0, appeal: 0.45, amenities: ["concessions"] },
+  { id: "low-7", tierId: "lower", label: "113", d: "M375,260 L460,245 L460,310 L370,320 Z", weight: 1.0, appeal: 0.55, amenities: ["wheelchair", "aisle"] },
+  { id: "low-8", tierId: "lower", label: "115", d: "M370,180 L460,170 L460,235 L375,250 Z", weight: 1.0, appeal: 0.75, amenities: ["bar", "aisle"] },
 
   // Upper deck — outer ring
-  { id: "up-1",  tierId: "upper", label: "301", d: "M30,160 L80,165 L60,250 L20,235 Z", weight: 1, appeal: 0.7 },
-  { id: "up-2",  tierId: "upper", label: "303", d: "M20,245 L65,260 L70,330 L25,315 Z", weight: 1, appeal: 0.55 },
-  { id: "up-3",  tierId: "upper", label: "305", d: "M30,340 L80,335 L105,400 L55,410 Z", weight: 1, appeal: 0.4 },
-  { id: "up-4",  tierId: "upper", label: "307", d: "M115,405 L210,430 L210,460 L120,455 Z", weight: 1, appeal: 0.25 },
-  { id: "up-5",  tierId: "upper", label: "309", d: "M220,435 L320,435 L320,470 L220,470 Z", weight: 1, appeal: 0.2 },
-  { id: "up-6",  tierId: "upper", label: "311", d: "M330,435 L420,430 L420,460 L330,470 Z", weight: 1, appeal: 0.3 },
-  { id: "up-7",  tierId: "upper", label: "313", d: "M430,405 L490,400 L480,455 L420,460 Z", weight: 1, appeal: 0.45 },
-  { id: "up-8",  tierId: "upper", label: "315", d: "M460,340 L510,335 L515,410 L470,410 Z", weight: 1, appeal: 0.5 },
-  { id: "up-9",  tierId: "upper", label: "317", d: "M465,250 L515,235 L520,315 L470,330 Z", weight: 1, appeal: 0.6 },
-  { id: "up-10", tierId: "upper", label: "319", d: "M460,165 L510,160 L520,235 L470,245 Z", weight: 1, appeal: 0.75 },
+  { id: "up-1",  tierId: "upper", label: "301", d: "M30,160 L80,165 L60,250 L20,235 Z", weight: 1, appeal: 0.7,  amenities: ["covered", "aisle"] },
+  { id: "up-2",  tierId: "upper", label: "303", d: "M20,245 L65,260 L70,330 L25,315 Z", weight: 1, appeal: 0.55, amenities: ["covered", "wheelchair"] },
+  { id: "up-3",  tierId: "upper", label: "305", d: "M30,340 L80,335 L105,400 L55,410 Z", weight: 1, appeal: 0.4,  amenities: ["covered", "concessions"] },
+  { id: "up-4",  tierId: "upper", label: "307", d: "M115,405 L210,430 L210,460 L120,455 Z", weight: 1, appeal: 0.25, amenities: ["covered", "family"] },
+  { id: "up-5",  tierId: "upper", label: "309", d: "M220,435 L320,435 L320,470 L220,470 Z", weight: 1, appeal: 0.2,  amenities: ["covered", "family", "concessions"] },
+  { id: "up-6",  tierId: "upper", label: "311", d: "M330,435 L420,430 L420,460 L330,470 Z", weight: 1, appeal: 0.3,  amenities: ["covered", "family"] },
+  { id: "up-7",  tierId: "upper", label: "313", d: "M430,405 L490,400 L480,455 L420,460 Z", weight: 1, appeal: 0.45, amenities: ["covered", "concessions"] },
+  { id: "up-8",  tierId: "upper", label: "315", d: "M460,340 L510,335 L515,410 L470,410 Z", weight: 1, appeal: 0.5,  amenities: ["covered", "wheelchair"] },
+  { id: "up-9",  tierId: "upper", label: "317", d: "M465,250 L515,235 L520,315 L470,330 Z", weight: 1, appeal: 0.6,  amenities: ["covered", "aisle"] },
+  { id: "up-10", tierId: "upper", label: "319", d: "M460,165 L510,160 L520,235 L470,245 Z", weight: 1, appeal: 0.75, amenities: ["covered", "bar"] },
 ];
 
 /**
@@ -129,6 +151,11 @@ const getAvailability = (s: SeatSection): Availability => {
 
 const SeatingMap = ({ tiers, activeTierId, onSelectTier, inventory }: SeatingMapProps) => {
   const [hovered, setHovered] = useState<string | null>(null);
+  // ---- Filters ----
+  const [tierFilter, setTierFilter] = useState<Set<TierId>>(new Set());
+  const [amenityFilter, setAmenityFilter] = useState<Set<AmenityId>>(new Set());
+  const [availableOnly, setAvailableOnly] = useState(false);
+  const [priceRange, setPriceRange] = useState<[number, number] | null>(null);
 
   // Derive per-section capacity & remaining from the event's tier inventory.
   const sections = useMemo<SeatSection[]>(() => {
@@ -153,6 +180,74 @@ const SeatingMap = ({ tiers, activeTierId, onSelectTier, inventory }: SeatingMap
       .filter((s) => s.capacity > 0);
   }, [inventory]);
 
+  // Tiers that actually have inventory for this event — used by the filter chips.
+  const availableTiers = useMemo(
+    () => tiers.filter((t) => (inventory[t.id]?.capacity ?? 0) > 0),
+    [tiers, inventory],
+  );
+
+  // Price bounds across this event's tiers.
+  const [priceMin, priceMax] = useMemo(() => {
+    if (availableTiers.length === 0) return [0, 0];
+    const prices = availableTiers.map((t) => t.price);
+    return [Math.min(...prices), Math.max(...prices)];
+  }, [availableTiers]);
+
+  const effectivePriceRange: [number, number] =
+    priceRange ?? [priceMin, priceMax];
+
+  // Determine whether a section matches the active filters.
+  const matchesFilters = (s: SeatSection): boolean => {
+    const tier = tiers.find((t) => t.id === s.tierId);
+    if (!tier) return false;
+    if (tierFilter.size > 0 && !tierFilter.has(s.tierId)) return false;
+    if (
+      tier.price < effectivePriceRange[0] ||
+      tier.price > effectivePriceRange[1]
+    )
+      return false;
+    if (amenityFilter.size > 0) {
+      for (const a of amenityFilter) if (!s.amenities.includes(a)) return false;
+    }
+    if (availableOnly && s.remaining <= 0) return false;
+    return true;
+  };
+
+  const visibleSections = useMemo(
+    () => sections.filter(matchesFilters),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sections, tierFilter, amenityFilter, availableOnly, effectivePriceRange[0], effectivePriceRange[1]],
+  );
+
+  const filtersActive =
+    tierFilter.size > 0 ||
+    amenityFilter.size > 0 ||
+    availableOnly ||
+    (priceRange !== null &&
+      (priceRange[0] !== priceMin || priceRange[1] !== priceMax));
+
+  const clearFilters = () => {
+    setTierFilter(new Set());
+    setAmenityFilter(new Set());
+    setAvailableOnly(false);
+    setPriceRange(null);
+  };
+
+  const toggleTier = (id: TierId) => {
+    setTierFilter((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+  const toggleAmenity = (id: AmenityId) => {
+    setAmenityFilter((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
   const getColor = (tierId: string) => {
     const t = tiers.find((tier) => tier.id === tierId);
     return t?.color ?? "hsl(var(--muted))";
@@ -164,9 +259,9 @@ const SeatingMap = ({ tiers, activeTierId, onSelectTier, inventory }: SeatingMap
     : null;
   const hoveredAvail = hoveredSection ? getAvailability(hoveredSection) : null;
 
-  const totalRemaining = sections.reduce((sum, s) => sum + s.remaining, 0);
-  const totalCapacity = sections.reduce((sum, s) => sum + s.capacity, 0);
-  const soldOutCount = sections.filter((s) => getAvailability(s) === "sold-out").length;
+  const totalRemaining = visibleSections.reduce((sum, s) => sum + s.remaining, 0);
+  const totalCapacity = visibleSections.reduce((sum, s) => sum + s.capacity, 0);
+  const soldOutCount = visibleSections.filter((s) => getAvailability(s) === "sold-out").length;
 
   return (
     <div className="rounded-2xl border border-border bg-card overflow-hidden">
@@ -179,8 +274,17 @@ const SeatingMap = ({ tiers, activeTierId, onSelectTier, inventory }: SeatingMap
             Tap a section to select a tier
           </h3>
           <div className="text-[11px] text-muted-foreground font-medium mt-1">
-            {totalRemaining.toLocaleString()} of {totalCapacity.toLocaleString()} seats left
-            {soldOutCount > 0 && ` · ${soldOutCount} sections sold out`}
+            {filtersActive ? (
+              <>
+                {visibleSections.length} of {sections.length} sections match ·{" "}
+                {totalRemaining.toLocaleString()} seats left
+              </>
+            ) : (
+              <>
+                {totalRemaining.toLocaleString()} of {totalCapacity.toLocaleString()} seats left
+                {soldOutCount > 0 && ` · ${soldOutCount} sections sold out`}
+              </>
+            )}
           </div>
         </div>
         {hoveredTier && (
@@ -198,6 +302,109 @@ const SeatingMap = ({ tiers, activeTierId, onSelectTier, inventory }: SeatingMap
                 : `${hoveredSection?.remaining} left · from $${hoveredTier.price}`}
             </div>
           </motion.div>
+        )}
+      </div>
+
+      {/* Filters */}
+      <div className="px-5 py-4 border-b border-border bg-muted/30 space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-foreground/80">
+            <Filter className="w-3.5 h-3.5" /> Filters
+          </div>
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2 text-[11px] font-bold text-foreground/80 cursor-pointer">
+              <Switch checked={availableOnly} onCheckedChange={setAvailableOnly} />
+              Available only
+            </label>
+            {filtersActive && (
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="inline-flex items-center gap-1 text-[11px] font-bold text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-3 h-3" /> Clear
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Tier chips */}
+        <div className="flex flex-wrap gap-1.5">
+          {availableTiers.map((t) => {
+            const active = tierFilter.has(t.id);
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => toggleTier(t.id)}
+                aria-pressed={active}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-bold transition-all ${
+                  active
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-background text-foreground/80 hover:border-foreground/40"
+                }`}
+              >
+                <span
+                  className="w-2 h-2 rounded-sm shrink-0"
+                  style={{ background: t.color }}
+                />
+                {t.name} · ${t.price}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Price range */}
+        {priceMax > priceMin && (
+          <div>
+            <div className="flex items-center justify-between text-[11px] font-bold text-muted-foreground mb-1.5">
+              <span>Price range</span>
+              <span className="text-foreground">
+                ${effectivePriceRange[0]} – ${effectivePriceRange[1]}
+              </span>
+            </div>
+            <Slider
+              min={priceMin}
+              max={priceMax}
+              step={1}
+              value={effectivePriceRange}
+              onValueChange={(v) =>
+                setPriceRange([v[0] ?? priceMin, v[1] ?? priceMax])
+              }
+              className="w-full"
+            />
+          </div>
+        )}
+
+        {/* Amenities */}
+        <div className="flex flex-wrap gap-1.5">
+          {AMENITY_META.map(({ id, label, icon: Icon }) => {
+            const active = amenityFilter.has(id);
+            const sectionCount = sections.filter((s) => s.amenities.includes(id)).length;
+            if (sectionCount === 0) return null;
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => toggleAmenity(id)}
+                aria-pressed={active}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-bold transition-all ${
+                  active
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border bg-background text-foreground/80 hover:border-foreground/40"
+                }`}
+              >
+                <Icon className="w-3 h-3" strokeWidth={2.5} />
+                {label}
+              </button>
+            );
+          })}
+        </div>
+
+        {visibleSections.length === 0 && (
+          <div className="text-[11px] font-bold text-destructive">
+            No sections match these filters. Try clearing some.
+          </div>
         )}
       </div>
 
@@ -268,6 +475,9 @@ const SeatingMap = ({ tiers, activeTierId, onSelectTier, inventory }: SeatingMap
             const soldOut = avail === "sold-out";
             const low = avail === "low";
             const tierColor = getColor(s.tierId);
+            const matches = matchesFilters(s);
+            const dimmed = filtersActive && !matches;
+            const interactive = !soldOut && matches;
             return (
               <g key={s.id}>
                 <motion.path
@@ -277,24 +487,28 @@ const SeatingMap = ({ tiers, activeTierId, onSelectTier, inventory }: SeatingMap
                   strokeWidth={2}
                   initial={false}
                   animate={{
-                    opacity: soldOut
+                    opacity: dimmed
+                      ? 0.15
+                      : soldOut
                       ? 0.85
                       : isActive
                       ? 1
                       : isHovered
                       ? 0.95
                       : 0.55,
-                    scale: !soldOut && isHovered ? 1.02 : 1,
+                    scale: interactive && isHovered ? 1.02 : 1,
                   }}
                   style={{ transformOrigin: "center", transformBox: "fill-box" }}
-                  whileTap={soldOut ? undefined : { scale: 0.97 }}
-                  className={soldOut ? "cursor-not-allowed" : "cursor-pointer"}
-                  onMouseEnter={() => setHovered(s.id)}
+                  whileTap={interactive ? { scale: 0.97 } : undefined}
+                  className={
+                    interactive ? "cursor-pointer" : "cursor-not-allowed"
+                  }
+                  onMouseEnter={() => !dimmed && setHovered(s.id)}
                   onMouseLeave={() => setHovered(null)}
-                  onClick={() => !soldOut && onSelectTier(s.tierId)}
+                  onClick={() => interactive && onSelectTier(s.tierId)}
                 />
                 {/* Low-availability pulse ring */}
-                {low && (
+                {low && !dimmed && (
                   <motion.path
                     d={s.d}
                     fill="none"
@@ -313,11 +527,14 @@ const SeatingMap = ({ tiers, activeTierId, onSelectTier, inventory }: SeatingMap
                   className={`pointer-events-none ${
                     soldOut ? "fill-muted-foreground" : "fill-primary-foreground"
                   }`}
-                  style={{ font: "700 10px Inter, sans-serif" }}
+                  style={{
+                    font: "700 10px Inter, sans-serif",
+                    opacity: dimmed ? 0.25 : 1,
+                  }}
                 >
                   {s.label}
                 </text>
-                {low && (
+                {low && !dimmed && (
                   <text
                     x={getCenterX(s.d)}
                     y={getCenterY(s.d) + 11}
