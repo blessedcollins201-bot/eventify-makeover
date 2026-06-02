@@ -1,6 +1,9 @@
 import { motion } from "framer-motion";
 import { useMemo, useState } from "react";
 import type { TierId, TierInventory } from "@/data/events";
+import { Accessibility, Beer, Filter, Users, Utensils, X } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 
 /** Static venue topology — capacity/remaining come from event inventory at runtime. */
 interface SectionTopology {
@@ -12,6 +15,8 @@ interface SectionTopology {
   weight: number;
   /** 0–1, higher = better view → sells out first. */
   appeal: number;
+  /** Amenities/accessibility flags exposed via filters. */
+  amenities: AmenityId[];
 }
 
 export interface SeatSection extends SectionTopology {
@@ -25,6 +30,23 @@ export interface SeatTierMeta {
   color: string; // hsl var reference
   price: number;
 }
+
+export type AmenityId =
+  | "wheelchair"
+  | "aisle"
+  | "covered"
+  | "bar"
+  | "concessions"
+  | "family";
+
+const AMENITY_META: { id: AmenityId; label: string; icon: typeof Accessibility }[] = [
+  { id: "wheelchair", label: "Wheelchair access", icon: Accessibility },
+  { id: "aisle", label: "Aisle seats", icon: Users },
+  { id: "covered", label: "Covered / shaded", icon: Filter },
+  { id: "bar", label: "Bar access", icon: Beer },
+  { id: "concessions", label: "Near concessions", icon: Utensils },
+  { id: "family", label: "Family section", icon: Users },
+];
 
 interface SeatingMapProps {
   tiers: SeatTierMeta[];
@@ -41,34 +63,34 @@ interface SeatingMapProps {
  */
 const topology: SectionTopology[] = [
   // VIP — pit, immediately in front of stage
-  { id: "pit-l", tierId: "vip", label: "Pit L", d: "M180,120 L260,120 L260,170 L180,170 Z", weight: 1, appeal: 0.95 },
-  { id: "pit-r", tierId: "vip", label: "Pit R", d: "M270,120 L350,120 L350,170 L270,170 Z", weight: 1, appeal: 1.0 },
+  { id: "pit-l", tierId: "vip", label: "Pit L", d: "M180,120 L260,120 L260,170 L180,170 Z", weight: 1, appeal: 0.95, amenities: ["bar", "aisle"] },
+  { id: "pit-r", tierId: "vip", label: "Pit R", d: "M270,120 L350,120 L350,170 L270,170 Z", weight: 1, appeal: 1.0, amenities: ["bar"] },
 
   // GA — floor
-  { id: "ga-1", tierId: "ga", label: "Floor A", d: "M170,180 L260,180 L260,240 L160,240 Z", weight: 1, appeal: 0.8 },
-  { id: "ga-2", tierId: "ga", label: "Floor B", d: "M270,180 L360,180 L370,240 L270,240 Z", weight: 1, appeal: 0.85 },
+  { id: "ga-1", tierId: "ga", label: "Floor A", d: "M170,180 L260,180 L260,240 L160,240 Z", weight: 1, appeal: 0.8, amenities: ["concessions"] },
+  { id: "ga-2", tierId: "ga", label: "Floor B", d: "M270,180 L360,180 L370,240 L270,240 Z", weight: 1, appeal: 0.85, amenities: ["concessions", "bar"] },
 
   // Lower bowl — curved sections
-  { id: "low-1", tierId: "lower", label: "101", d: "M90,170 L160,180 L150,250 L70,235 Z", weight: 1.0, appeal: 0.7 },
-  { id: "low-2", tierId: "lower", label: "103", d: "M70,245 L155,260 L165,320 L75,310 Z", weight: 1.0, appeal: 0.5 },
-  { id: "low-3", tierId: "lower", label: "105", d: "M80,320 L170,330 L200,380 L110,380 Z", weight: 1.0, appeal: 0.4 },
-  { id: "low-4", tierId: "lower", label: "107", d: "M210,385 L320,385 L320,425 L210,425 Z", weight: 1.15, appeal: 0.3 },
-  { id: "low-5", tierId: "lower", label: "109", d: "M330,385 L420,380 L450,380 L360,425 L330,425 Z", weight: 1.15, appeal: 0.35 },
-  { id: "low-6", tierId: "lower", label: "111", d: "M370,330 L460,320 L450,380 L365,380 Z", weight: 1.0, appeal: 0.45 },
-  { id: "low-7", tierId: "lower", label: "113", d: "M375,260 L460,245 L460,310 L370,320 Z", weight: 1.0, appeal: 0.55 },
-  { id: "low-8", tierId: "lower", label: "115", d: "M370,180 L460,170 L460,235 L375,250 Z", weight: 1.0, appeal: 0.75 },
+  { id: "low-1", tierId: "lower", label: "101", d: "M90,170 L160,180 L150,250 L70,235 Z", weight: 1.0, appeal: 0.7, amenities: ["aisle", "bar"] },
+  { id: "low-2", tierId: "lower", label: "103", d: "M70,245 L155,260 L165,320 L75,310 Z", weight: 1.0, appeal: 0.5, amenities: ["wheelchair", "aisle"] },
+  { id: "low-3", tierId: "lower", label: "105", d: "M80,320 L170,330 L200,380 L110,380 Z", weight: 1.0, appeal: 0.4, amenities: ["concessions"] },
+  { id: "low-4", tierId: "lower", label: "107", d: "M210,385 L320,385 L320,425 L210,425 Z", weight: 1.15, appeal: 0.3, amenities: ["family", "concessions"] },
+  { id: "low-5", tierId: "lower", label: "109", d: "M330,385 L420,380 L450,380 L360,425 L330,425 Z", weight: 1.15, appeal: 0.35, amenities: ["family"] },
+  { id: "low-6", tierId: "lower", label: "111", d: "M370,330 L460,320 L450,380 L365,380 Z", weight: 1.0, appeal: 0.45, amenities: ["concessions"] },
+  { id: "low-7", tierId: "lower", label: "113", d: "M375,260 L460,245 L460,310 L370,320 Z", weight: 1.0, appeal: 0.55, amenities: ["wheelchair", "aisle"] },
+  { id: "low-8", tierId: "lower", label: "115", d: "M370,180 L460,170 L460,235 L375,250 Z", weight: 1.0, appeal: 0.75, amenities: ["bar", "aisle"] },
 
   // Upper deck — outer ring
-  { id: "up-1",  tierId: "upper", label: "301", d: "M30,160 L80,165 L60,250 L20,235 Z", weight: 1, appeal: 0.7 },
-  { id: "up-2",  tierId: "upper", label: "303", d: "M20,245 L65,260 L70,330 L25,315 Z", weight: 1, appeal: 0.55 },
-  { id: "up-3",  tierId: "upper", label: "305", d: "M30,340 L80,335 L105,400 L55,410 Z", weight: 1, appeal: 0.4 },
-  { id: "up-4",  tierId: "upper", label: "307", d: "M115,405 L210,430 L210,460 L120,455 Z", weight: 1, appeal: 0.25 },
-  { id: "up-5",  tierId: "upper", label: "309", d: "M220,435 L320,435 L320,470 L220,470 Z", weight: 1, appeal: 0.2 },
-  { id: "up-6",  tierId: "upper", label: "311", d: "M330,435 L420,430 L420,460 L330,470 Z", weight: 1, appeal: 0.3 },
-  { id: "up-7",  tierId: "upper", label: "313", d: "M430,405 L490,400 L480,455 L420,460 Z", weight: 1, appeal: 0.45 },
-  { id: "up-8",  tierId: "upper", label: "315", d: "M460,340 L510,335 L515,410 L470,410 Z", weight: 1, appeal: 0.5 },
-  { id: "up-9",  tierId: "upper", label: "317", d: "M465,250 L515,235 L520,315 L470,330 Z", weight: 1, appeal: 0.6 },
-  { id: "up-10", tierId: "upper", label: "319", d: "M460,165 L510,160 L520,235 L470,245 Z", weight: 1, appeal: 0.75 },
+  { id: "up-1",  tierId: "upper", label: "301", d: "M30,160 L80,165 L60,250 L20,235 Z", weight: 1, appeal: 0.7,  amenities: ["covered", "aisle"] },
+  { id: "up-2",  tierId: "upper", label: "303", d: "M20,245 L65,260 L70,330 L25,315 Z", weight: 1, appeal: 0.55, amenities: ["covered", "wheelchair"] },
+  { id: "up-3",  tierId: "upper", label: "305", d: "M30,340 L80,335 L105,400 L55,410 Z", weight: 1, appeal: 0.4,  amenities: ["covered", "concessions"] },
+  { id: "up-4",  tierId: "upper", label: "307", d: "M115,405 L210,430 L210,460 L120,455 Z", weight: 1, appeal: 0.25, amenities: ["covered", "family"] },
+  { id: "up-5",  tierId: "upper", label: "309", d: "M220,435 L320,435 L320,470 L220,470 Z", weight: 1, appeal: 0.2,  amenities: ["covered", "family", "concessions"] },
+  { id: "up-6",  tierId: "upper", label: "311", d: "M330,435 L420,430 L420,460 L330,470 Z", weight: 1, appeal: 0.3,  amenities: ["covered", "family"] },
+  { id: "up-7",  tierId: "upper", label: "313", d: "M430,405 L490,400 L480,455 L420,460 Z", weight: 1, appeal: 0.45, amenities: ["covered", "concessions"] },
+  { id: "up-8",  tierId: "upper", label: "315", d: "M460,340 L510,335 L515,410 L470,410 Z", weight: 1, appeal: 0.5,  amenities: ["covered", "wheelchair"] },
+  { id: "up-9",  tierId: "upper", label: "317", d: "M465,250 L515,235 L520,315 L470,330 Z", weight: 1, appeal: 0.6,  amenities: ["covered", "aisle"] },
+  { id: "up-10", tierId: "upper", label: "319", d: "M460,165 L510,160 L520,235 L470,245 Z", weight: 1, appeal: 0.75, amenities: ["covered", "bar"] },
 ];
 
 /**
