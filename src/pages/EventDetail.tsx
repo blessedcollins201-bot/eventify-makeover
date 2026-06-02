@@ -529,6 +529,7 @@ const EventDetail = () => {
                   }))}
                   activeTierId={tierId}
                   onSelectTier={setTierId}
+                  inventory={event.inventory}
                 />
               </div>
 
