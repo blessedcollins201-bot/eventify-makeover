@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { events, getEventById } from "@/data/events";
+import { events, getEventById, type TierId } from "@/data/events";
 import SeatingMap from "@/components/SeatingMap";
 import EventCard from "@/components/EventCard";
 import {
@@ -42,19 +42,19 @@ import {
 } from "@/components/ui/accordion";
 import { toast } from "sonner";
 
-interface SeatTier {
-  id: string;
+interface TierDef {
+  id: TierId;
   name: string;
   description: string;
   price: number;
-  remaining: number;
+  color: string;
 }
 
-const tiers: (SeatTier & { color: string })[] = [
-  { id: "vip", name: "VIP Package", description: "Pit access + early entry + merch", price: 349, remaining: 12, color: "hsl(330 81% 60%)" },
-  { id: "lower", name: "Lower Bowl", description: "Sections 101–115 • Reserved seating", price: 165, remaining: 38, color: "hsl(213 97% 44%)" },
-  { id: "ga", name: "General Admission", description: "Standing floor access", price: 89, remaining: 142, color: "hsl(160 84% 39%)" },
-  { id: "upper", name: "Upper Deck", description: "Sections 301–319 • Best value", price: 65, remaining: 220, color: "hsl(38 92% 50%)" },
+const TIER_DEFS: TierDef[] = [
+  { id: "vip",   name: "VIP Package",       description: "Pit access + early entry + merch",       price: 349, color: "hsl(330 81% 60%)" },
+  { id: "lower", name: "Lower Bowl",        description: "Sections 101–115 • Reserved seating",    price: 165, color: "hsl(213 97% 44%)" },
+  { id: "ga",    name: "General Admission", description: "Standing floor access",                  price: 89,  color: "hsl(160 84% 39%)" },
+  { id: "upper", name: "Upper Deck",        description: "Sections 301–319 • Best value",          price: 65,  color: "hsl(38 92% 50%)" },
 ];
 
 const SERVICE_FEE_RATE = 0.18;
