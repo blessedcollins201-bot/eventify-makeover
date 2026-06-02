@@ -128,11 +128,31 @@ const reviews = [
 const EventDetail = () => {
   const { id } = useParams<{ id: string }>();
   const event = id ? getEventById(id) : undefined;
-  const [tierId, setTierId] = useState<string>("lower");
+  const [tierId, setTierId] = useState<TierId>("lower");
   const [qty, setQty] = useState(2);
   const [activeSection, setActiveSection] = useState<string>("overview");
 
-  const tier = useMemo(() => tiers.find((t) => t.id === tierId)!, [tierId]);
+  // Tiers available for this event are those with non-zero capacity in inventory.
+  const tiers = useMemo(() => {
+    if (!event) return [] as (TierDef & { remaining: number; capacity: number })[];
+    return TIER_DEFS
+      .map((t) => {
+        const inv = event.inventory[t.id];
+        return { ...t, remaining: inv?.remaining ?? 0, capacity: inv?.capacity ?? 0 };
+      })
+      .filter((t) => t.capacity > 0);
+  }, [event]);
+
+  // Keep selected tier valid for this event (fall back to first available).
+  useEffect(() => {
+    if (tiers.length === 0) return;
+    if (!tiers.some((t) => t.id === tierId)) setTierId(tiers[0].id);
+  }, [tiers, tierId]);
+
+  const tier = useMemo(
+    () => tiers.find((t) => t.id === tierId) ?? tiers[0],
+    [tiers, tierId],
+  );
   const subtotal = tier.price * qty;
   const fees = subtotal * SERVICE_FEE_RATE;
   const total = subtotal + fees;
