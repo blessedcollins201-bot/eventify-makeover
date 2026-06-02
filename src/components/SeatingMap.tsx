@@ -151,6 +151,11 @@ const getAvailability = (s: SeatSection): Availability => {
 
 const SeatingMap = ({ tiers, activeTierId, onSelectTier, inventory }: SeatingMapProps) => {
   const [hovered, setHovered] = useState<string | null>(null);
+  // ---- Filters ----
+  const [tierFilter, setTierFilter] = useState<Set<TierId>>(new Set());
+  const [amenityFilter, setAmenityFilter] = useState<Set<AmenityId>>(new Set());
+  const [availableOnly, setAvailableOnly] = useState(false);
+  const [priceRange, setPriceRange] = useState<[number, number] | null>(null);
 
   // Derive per-section capacity & remaining from the event's tier inventory.
   const sections = useMemo<SeatSection[]>(() => {
@@ -175,6 +180,74 @@ const SeatingMap = ({ tiers, activeTierId, onSelectTier, inventory }: SeatingMap
       .filter((s) => s.capacity > 0);
   }, [inventory]);
 
+  // Tiers that actually have inventory for this event — used by the filter chips.
+  const availableTiers = useMemo(
+    () => tiers.filter((t) => (inventory[t.id]?.capacity ?? 0) > 0),
+    [tiers, inventory],
+  );
+
+  // Price bounds across this event's tiers.
+  const [priceMin, priceMax] = useMemo(() => {
+    if (availableTiers.length === 0) return [0, 0];
+    const prices = availableTiers.map((t) => t.price);
+    return [Math.min(...prices), Math.max(...prices)];
+  }, [availableTiers]);
+
+  const effectivePriceRange: [number, number] =
+    priceRange ?? [priceMin, priceMax];
+
+  // Determine whether a section matches the active filters.
+  const matchesFilters = (s: SeatSection): boolean => {
+    const tier = tiers.find((t) => t.id === s.tierId);
+    if (!tier) return false;
+    if (tierFilter.size > 0 && !tierFilter.has(s.tierId)) return false;
+    if (
+      tier.price < effectivePriceRange[0] ||
+      tier.price > effectivePriceRange[1]
+    )
+      return false;
+    if (amenityFilter.size > 0) {
+      for (const a of amenityFilter) if (!s.amenities.includes(a)) return false;
+    }
+    if (availableOnly && s.remaining <= 0) return false;
+    return true;
+  };
+
+  const visibleSections = useMemo(
+    () => sections.filter(matchesFilters),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sections, tierFilter, amenityFilter, availableOnly, effectivePriceRange[0], effectivePriceRange[1]],
+  );
+
+  const filtersActive =
+    tierFilter.size > 0 ||
+    amenityFilter.size > 0 ||
+    availableOnly ||
+    (priceRange !== null &&
+      (priceRange[0] !== priceMin || priceRange[1] !== priceMax));
+
+  const clearFilters = () => {
+    setTierFilter(new Set());
+    setAmenityFilter(new Set());
+    setAvailableOnly(false);
+    setPriceRange(null);
+  };
+
+  const toggleTier = (id: TierId) => {
+    setTierFilter((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+  const toggleAmenity = (id: AmenityId) => {
+    setAmenityFilter((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
   const getColor = (tierId: string) => {
     const t = tiers.find((tier) => tier.id === tierId);
     return t?.color ?? "hsl(var(--muted))";
@@ -186,9 +259,9 @@ const SeatingMap = ({ tiers, activeTierId, onSelectTier, inventory }: SeatingMap
     : null;
   const hoveredAvail = hoveredSection ? getAvailability(hoveredSection) : null;
 
-  const totalRemaining = sections.reduce((sum, s) => sum + s.remaining, 0);
-  const totalCapacity = sections.reduce((sum, s) => sum + s.capacity, 0);
-  const soldOutCount = sections.filter((s) => getAvailability(s) === "sold-out").length;
+  const totalRemaining = visibleSections.reduce((sum, s) => sum + s.remaining, 0);
+  const totalCapacity = visibleSections.reduce((sum, s) => sum + s.capacity, 0);
+  const soldOutCount = visibleSections.filter((s) => getAvailability(s) === "sold-out").length;
 
   return (
     <div className="rounded-2xl border border-border bg-card overflow-hidden">
@@ -201,8 +274,17 @@ const SeatingMap = ({ tiers, activeTierId, onSelectTier, inventory }: SeatingMap
             Tap a section to select a tier
           </h3>
           <div className="text-[11px] text-muted-foreground font-medium mt-1">
-            {totalRemaining.toLocaleString()} of {totalCapacity.toLocaleString()} seats left
-            {soldOutCount > 0 && ` · ${soldOutCount} sections sold out`}
+            {filtersActive ? (
+              <>
+                {visibleSections.length} of {sections.length} sections match ·{" "}
+                {totalRemaining.toLocaleString()} seats left
+              </>
+            ) : (
+              <>
+                {totalRemaining.toLocaleString()} of {totalCapacity.toLocaleString()} seats left
+                {soldOutCount > 0 && ` · ${soldOutCount} sections sold out`}
+              </>
+            )}
           </div>
         </div>
         {hoveredTier && (
@@ -220,6 +302,109 @@ const SeatingMap = ({ tiers, activeTierId, onSelectTier, inventory }: SeatingMap
                 : `${hoveredSection?.remaining} left · from $${hoveredTier.price}`}
             </div>
           </motion.div>
+        )}
+      </div>
+
+      {/* Filters */}
+      <div className="px-5 py-4 border-b border-border bg-muted/30 space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-foreground/80">
+            <Filter className="w-3.5 h-3.5" /> Filters
+          </div>
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2 text-[11px] font-bold text-foreground/80 cursor-pointer">
+              <Switch checked={availableOnly} onCheckedChange={setAvailableOnly} />
+              Available only
+            </label>
+            {filtersActive && (
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="inline-flex items-center gap-1 text-[11px] font-bold text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-3 h-3" /> Clear
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Tier chips */}
+        <div className="flex flex-wrap gap-1.5">
+          {availableTiers.map((t) => {
+            const active = tierFilter.has(t.id);
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => toggleTier(t.id)}
+                aria-pressed={active}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-bold transition-all ${
+                  active
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-background text-foreground/80 hover:border-foreground/40"
+                }`}
+              >
+                <span
+                  className="w-2 h-2 rounded-sm shrink-0"
+                  style={{ background: t.color }}
+                />
+                {t.name} · ${t.price}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Price range */}
+        {priceMax > priceMin && (
+          <div>
+            <div className="flex items-center justify-between text-[11px] font-bold text-muted-foreground mb-1.5">
+              <span>Price range</span>
+              <span className="text-foreground">
+                ${effectivePriceRange[0]} – ${effectivePriceRange[1]}
+              </span>
+            </div>
+            <Slider
+              min={priceMin}
+              max={priceMax}
+              step={1}
+              value={effectivePriceRange}
+              onValueChange={(v) =>
+                setPriceRange([v[0] ?? priceMin, v[1] ?? priceMax])
+              }
+              className="w-full"
+            />
+          </div>
+        )}
+
+        {/* Amenities */}
+        <div className="flex flex-wrap gap-1.5">
+          {AMENITY_META.map(({ id, label, icon: Icon }) => {
+            const active = amenityFilter.has(id);
+            const sectionCount = sections.filter((s) => s.amenities.includes(id)).length;
+            if (sectionCount === 0) return null;
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => toggleAmenity(id)}
+                aria-pressed={active}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-bold transition-all ${
+                  active
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border bg-background text-foreground/80 hover:border-foreground/40"
+                }`}
+              >
+                <Icon className="w-3 h-3" strokeWidth={2.5} />
+                {label}
+              </button>
+            );
+          })}
+        </div>
+
+        {visibleSections.length === 0 && (
+          <div className="text-[11px] font-bold text-destructive">
+            No sections match these filters. Try clearing some.
+          </div>
         )}
       </div>
 
