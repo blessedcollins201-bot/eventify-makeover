@@ -423,6 +423,51 @@ const SeatingMap = ({ tiers, activeTierId, onSelectTier, inventory }: SeatingMap
     if (activePresetId === id) setActivePresetId(null);
   };
 
+  const sharePreset = async (preset: FilterPreset) => {
+    const param = encodePresetToParam(preset);
+    const url = new URL(window.location.href);
+    url.searchParams.set(PRESET_QUERY_PARAM, param);
+    const shareUrl = url.toString();
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: `Seating search: ${preset.name}`,
+          text: `Check out my seating filters: ${preset.name}`,
+          url: shareUrl,
+        });
+        return;
+      }
+    } catch {
+      /* fall through to clipboard */
+    }
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success("Share link copied", {
+        description: `"${preset.name}" — paste it anywhere to share these filters.`,
+      });
+    } catch {
+      toast.error("Could not copy link", { description: shareUrl });
+    }
+  };
+
+  // Apply a shared preset from ?seats=... on first mount (per event).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const raw = params.get(PRESET_QUERY_PARAM);
+    if (!raw) return;
+    const shared = decodePresetFromParam(raw);
+    if (!shared) return;
+    setUserPresets((prev) =>
+      prev.some((p) => p.id === shared.id) ? prev : [shared, ...prev],
+    );
+    applyPreset(shared);
+    toast("Loaded shared seating search", {
+      description: `"${shared.name}" applied to the seating map.`,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [priceMin, priceMax]);
+
   const getColor = (tierId: string) => {
     const t = tiers.find((tier) => tier.id === tierId);
     return t?.color ?? "hsl(var(--muted))";
