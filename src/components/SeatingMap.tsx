@@ -306,6 +306,7 @@ const SeatingMap = ({ tiers, activeTierId, onSelectTier, inventory }: SeatingMap
     setAmenityFilter(new Set());
     setAvailableOnly(false);
     setPriceRange(null);
+    setActivePresetId(null);
   };
 
   const toggleTier = (id: TierId) => {
@@ -321,6 +322,52 @@ const SeatingMap = ({ tiers, activeTierId, onSelectTier, inventory }: SeatingMap
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
+    setActivePresetId(null);
+  };
+
+  const applyPreset = (preset: FilterPreset) => {
+    setTierFilter(new Set(preset.tiers));
+    setAmenityFilter(new Set(preset.amenities));
+    setAvailableOnly(preset.availableOnly);
+    if (preset.price === "all" || priceMax === priceMin) {
+      setPriceRange(null);
+    } else if (preset.price === "cheapest") {
+      // Bottom ~50% of the price range
+      const mid = Math.round(priceMin + (priceMax - priceMin) * 0.5);
+      setPriceRange([priceMin, mid]);
+    } else {
+      setPriceRange([
+        Math.max(priceMin, preset.price[0]),
+        Math.min(priceMax, preset.price[1]),
+      ]);
+    }
+    setActivePresetId(preset.id);
+  };
+
+  const saveCurrentAsPreset = () => {
+    const name = presetName.trim();
+    if (!name) return;
+    const preset: FilterPreset = {
+      id: `user-${Date.now()}`,
+      name,
+      tiers: Array.from(tierFilter),
+      amenities: Array.from(amenityFilter),
+      availableOnly,
+      price:
+        priceRange &&
+        (priceRange[0] !== priceMin || priceRange[1] !== priceMax)
+          ? [priceRange[0], priceRange[1]]
+          : "all",
+    };
+    setUserPresets((prev) => [...prev, preset]);
+    setActivePresetId(preset.id);
+    setPresetName("");
+    setSavingPreset(false);
+  };
+
+  const deletePreset = (id: string) => {
+    setUserPresets((prev) => prev.filter((p) => p.id !== id));
+    if (activePresetId === id) setActivePresetId(null);
   };
 
   const getColor = (tierId: string) => {
