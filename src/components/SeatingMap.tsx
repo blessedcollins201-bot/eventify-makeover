@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { TierId, TierInventory } from "@/data/events";
-import { Accessibility, Beer, Filter, Users, Utensils, X } from "lucide-react";
+import { Accessibility, Beer, BookmarkPlus, Filter, Star, Trash2, Users, Utensils, X } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 
@@ -47,6 +47,59 @@ const AMENITY_META: { id: AmenityId; label: string; icon: typeof Accessibility }
   { id: "concessions", label: "Near concessions", icon: Utensils },
   { id: "family", label: "Family section", icon: Users },
 ];
+
+// ---- Filter presets ----
+interface FilterPreset {
+  id: string;
+  name: string;
+  builtIn?: boolean;
+  tiers: TierId[];
+  amenities: AmenityId[];
+  availableOnly: boolean;
+  /** 'cheapest' | 'all' | [min,max] – resolved against current event price bounds. */
+  price: "cheapest" | "all" | [number, number];
+}
+
+const BUILTIN_PRESETS: FilterPreset[] = [
+  {
+    id: "accessible-value",
+    name: "Accessible + Best Value",
+    builtIn: true,
+    tiers: [],
+    amenities: ["wheelchair"],
+    availableOnly: true,
+    price: "cheapest",
+  },
+  {
+    id: "premium-view",
+    name: "Premium View",
+    builtIn: true,
+    tiers: ["vip", "lower"],
+    amenities: ["bar"],
+    availableOnly: true,
+    price: "all",
+  },
+  {
+    id: "family",
+    name: "Family-Friendly",
+    builtIn: true,
+    tiers: [],
+    amenities: ["family", "concessions"],
+    availableOnly: true,
+    price: "all",
+  },
+  {
+    id: "available",
+    name: "Available Only",
+    builtIn: true,
+    tiers: [],
+    amenities: [],
+    availableOnly: true,
+    price: "all",
+  },
+];
+
+const PRESETS_STORAGE_KEY = "tm-seatmap-presets";
 
 interface SeatingMapProps {
   tiers: SeatTierMeta[];
@@ -157,6 +210,28 @@ const SeatingMap = ({ tiers, activeTierId, onSelectTier, inventory }: SeatingMap
   const [availableOnly, setAvailableOnly] = useState(false);
   const [priceRange, setPriceRange] = useState<[number, number] | null>(null);
 
+  // ---- Presets ----
+  const [userPresets, setUserPresets] = useState<FilterPreset[]>([]);
+  const [activePresetId, setActivePresetId] = useState<string | null>(null);
+  const [savingPreset, setSavingPreset] = useState(false);
+  const [presetName, setPresetName] = useState("");
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(PRESETS_STORAGE_KEY);
+      if (raw) setUserPresets(JSON.parse(raw));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+  useEffect(() => {
+    try {
+      localStorage.setItem(PRESETS_STORAGE_KEY, JSON.stringify(userPresets));
+    } catch {
+      /* ignore */
+    }
+  }, [userPresets]);
+
   // Derive per-section capacity & remaining from the event's tier inventory.
   const sections = useMemo<SeatSection[]>(() => {
     const byTier = new Map<TierId, SectionTopology[]>();
@@ -231,6 +306,7 @@ const SeatingMap = ({ tiers, activeTierId, onSelectTier, inventory }: SeatingMap
     setAmenityFilter(new Set());
     setAvailableOnly(false);
     setPriceRange(null);
+    setActivePresetId(null);
   };
 
   const toggleTier = (id: TierId) => {
@@ -239,6 +315,7 @@ const SeatingMap = ({ tiers, activeTierId, onSelectTier, inventory }: SeatingMap
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
+    setActivePresetId(null);
   };
   const toggleAmenity = (id: AmenityId) => {
     setAmenityFilter((prev) => {
@@ -246,6 +323,52 @@ const SeatingMap = ({ tiers, activeTierId, onSelectTier, inventory }: SeatingMap
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
+    setActivePresetId(null);
+  };
+
+  const applyPreset = (preset: FilterPreset) => {
+    setTierFilter(new Set(preset.tiers));
+    setAmenityFilter(new Set(preset.amenities));
+    setAvailableOnly(preset.availableOnly);
+    if (preset.price === "all" || priceMax === priceMin) {
+      setPriceRange(null);
+    } else if (preset.price === "cheapest") {
+      // Bottom ~50% of the price range
+      const mid = Math.round(priceMin + (priceMax - priceMin) * 0.5);
+      setPriceRange([priceMin, mid]);
+    } else {
+      setPriceRange([
+        Math.max(priceMin, preset.price[0]),
+        Math.min(priceMax, preset.price[1]),
+      ]);
+    }
+    setActivePresetId(preset.id);
+  };
+
+  const saveCurrentAsPreset = () => {
+    const name = presetName.trim();
+    if (!name) return;
+    const preset: FilterPreset = {
+      id: `user-${Date.now()}`,
+      name,
+      tiers: Array.from(tierFilter),
+      amenities: Array.from(amenityFilter),
+      availableOnly,
+      price:
+        priceRange &&
+        (priceRange[0] !== priceMin || priceRange[1] !== priceMax)
+          ? [priceRange[0], priceRange[1]]
+          : "all",
+    };
+    setUserPresets((prev) => [...prev, preset]);
+    setActivePresetId(preset.id);
+    setPresetName("");
+    setSavingPreset(false);
+  };
+
+  const deletePreset = (id: string) => {
+    setUserPresets((prev) => prev.filter((p) => p.id !== id));
+    if (activePresetId === id) setActivePresetId(null);
   };
 
   const getColor = (tierId: string) => {
@@ -307,13 +430,98 @@ const SeatingMap = ({ tiers, activeTierId, onSelectTier, inventory }: SeatingMap
 
       {/* Filters */}
       <div className="px-5 py-4 border-b border-border bg-muted/30 space-y-3">
+        {/* Presets */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-foreground/70">
+              <Star className="w-3 h-3" /> Presets
+            </div>
+            <button
+              type="button"
+              onClick={() => setSavingPreset((s) => !s)}
+              className="inline-flex items-center gap-1 text-[11px] font-bold text-muted-foreground hover:text-foreground"
+            >
+              <BookmarkPlus className="w-3 h-3" />
+              {savingPreset ? "Cancel" : "Save current"}
+            </button>
+          </div>
+
+          <div className="flex flex-wrap gap-1.5">
+            {[...BUILTIN_PRESETS, ...userPresets].map((p) => {
+              const active = activePresetId === p.id;
+              return (
+                <div key={p.id} className="group relative">
+                  <button
+                    type="button"
+                    onClick={() => applyPreset(p)}
+                    aria-pressed={active}
+                    className={`inline-flex items-center gap-1.5 pl-2.5 ${
+                      p.builtIn ? "pr-2.5" : "pr-6"
+                    } py-1 rounded-full border text-[11px] font-bold transition-all ${
+                      active
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border bg-background text-foreground/80 hover:border-foreground/40"
+                    }`}
+                  >
+                    {p.builtIn && <Star className="w-3 h-3" strokeWidth={2.5} />}
+                    {p.name}
+                  </button>
+                  {!p.builtIn && (
+                    <button
+                      type="button"
+                      onClick={() => deletePreset(p.id)}
+                      aria-label={`Delete ${p.name} preset`}
+                      className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 rounded-full text-muted-foreground hover:text-destructive"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {savingPreset && (
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={presetName}
+                onChange={(e) => setPresetName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && saveCurrentAsPreset()}
+                placeholder="Name this preset…"
+                className="flex-1 px-2.5 py-1 rounded-md border border-border bg-background text-[11px] font-medium text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                autoFocus
+              />
+              <button
+                type="button"
+                onClick={saveCurrentAsPreset}
+                disabled={!presetName.trim() || !filtersActive}
+                className="px-2.5 py-1 rounded-md bg-primary text-primary-foreground text-[11px] font-bold disabled:opacity-50"
+              >
+                Save
+              </button>
+            </div>
+          )}
+          {savingPreset && !filtersActive && (
+            <div className="text-[11px] font-medium text-muted-foreground">
+              Apply some filters first, then save them as a preset.
+            </div>
+          )}
+        </div>
+
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-foreground/80">
             <Filter className="w-3.5 h-3.5" /> Filters
           </div>
           <div className="flex items-center gap-3">
             <label className="flex items-center gap-2 text-[11px] font-bold text-foreground/80 cursor-pointer">
-              <Switch checked={availableOnly} onCheckedChange={setAvailableOnly} />
+              <Switch
+                checked={availableOnly}
+                onCheckedChange={(v) => {
+                  setAvailableOnly(v);
+                  setActivePresetId(null);
+                }}
+              />
               Available only
             </label>
             {filtersActive && (
@@ -368,9 +576,10 @@ const SeatingMap = ({ tiers, activeTierId, onSelectTier, inventory }: SeatingMap
               max={priceMax}
               step={1}
               value={effectivePriceRange}
-              onValueChange={(v) =>
-                setPriceRange([v[0] ?? priceMin, v[1] ?? priceMax])
-              }
+              onValueChange={(v) => {
+                setPriceRange([v[0] ?? priceMin, v[1] ?? priceMax]);
+                setActivePresetId(null);
+              }}
               className="w-full"
             />
           </div>
