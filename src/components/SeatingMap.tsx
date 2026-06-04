@@ -1,9 +1,10 @@
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import type { TierId, TierInventory } from "@/data/events";
-import { Accessibility, Beer, BookmarkPlus, Filter, Star, Trash2, Users, Utensils, X } from "lucide-react";
+import { Accessibility, Beer, BookmarkPlus, Filter, Share2, Star, Trash2, Users, Utensils, X } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
+import { toast } from "sonner";
 
 /** Static venue topology — capacity/remaining come from event inventory at runtime. */
 interface SectionTopology {
@@ -100,6 +101,57 @@ const BUILTIN_PRESETS: FilterPreset[] = [
 ];
 
 const PRESETS_STORAGE_KEY = "tm-seatmap-presets";
+const PRESET_QUERY_PARAM = "seats";
+
+/** Encode a preset into a compact URL-safe query string value. */
+function encodePresetToParam(preset: FilterPreset): string {
+  const payload = {
+    n: preset.name,
+    t: preset.tiers,
+    a: preset.amenities,
+    o: preset.availableOnly ? 1 : 0,
+    p:
+      preset.price === "cheapest"
+        ? "c"
+        : preset.price === "all"
+          ? "a"
+          : [preset.price[0], preset.price[1]],
+  };
+  const json = JSON.stringify(payload);
+  // base64url
+  const b64 =
+    typeof btoa !== "undefined" ? btoa(unescape(encodeURIComponent(json))) : json;
+  return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function decodePresetFromParam(value: string): FilterPreset | null {
+  try {
+    const b64 = value.replace(/-/g, "+").replace(/_/g, "/");
+    const json =
+      typeof atob !== "undefined"
+        ? decodeURIComponent(escape(atob(b64)))
+        : b64;
+    const data = JSON.parse(json);
+    const price: FilterPreset["price"] =
+      data.p === "c"
+        ? "cheapest"
+        : data.p === "a"
+          ? "all"
+          : Array.isArray(data.p) && data.p.length === 2
+            ? [Number(data.p[0]), Number(data.p[1])]
+            : "all";
+    return {
+      id: `shared-${value.slice(0, 16)}`,
+      name: typeof data.n === "string" && data.n.trim() ? data.n : "Shared search",
+      tiers: Array.isArray(data.t) ? (data.t as TierId[]) : [],
+      amenities: Array.isArray(data.a) ? (data.a as AmenityId[]) : [],
+      availableOnly: !!data.o,
+      price,
+    };
+  } catch {
+    return null;
+  }
+}
 
 interface SeatingMapProps {
   tiers: SeatTierMeta[];
@@ -371,6 +423,51 @@ const SeatingMap = ({ tiers, activeTierId, onSelectTier, inventory }: SeatingMap
     if (activePresetId === id) setActivePresetId(null);
   };
 
+  const sharePreset = async (preset: FilterPreset) => {
+    const param = encodePresetToParam(preset);
+    const url = new URL(window.location.href);
+    url.searchParams.set(PRESET_QUERY_PARAM, param);
+    const shareUrl = url.toString();
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: `Seating search: ${preset.name}`,
+          text: `Check out my seating filters: ${preset.name}`,
+          url: shareUrl,
+        });
+        return;
+      }
+    } catch {
+      /* fall through to clipboard */
+    }
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success("Share link copied", {
+        description: `"${preset.name}" — paste it anywhere to share these filters.`,
+      });
+    } catch {
+      toast.error("Could not copy link", { description: shareUrl });
+    }
+  };
+
+  // Apply a shared preset from ?seats=... on first mount (per event).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const raw = params.get(PRESET_QUERY_PARAM);
+    if (!raw) return;
+    const shared = decodePresetFromParam(raw);
+    if (!shared) return;
+    setUserPresets((prev) =>
+      prev.some((p) => p.id === shared.id) ? prev : [shared, ...prev],
+    );
+    applyPreset(shared);
+    toast("Loaded shared seating search", {
+      description: `"${shared.name}" applied to the seating map.`,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [priceMin, priceMax]);
+
   const getColor = (tierId: string) => {
     const t = tiers.find((tier) => tier.id === tierId);
     return t?.color ?? "hsl(var(--muted))";
@@ -449,15 +546,14 @@ const SeatingMap = ({ tiers, activeTierId, onSelectTier, inventory }: SeatingMap
           <div className="flex flex-wrap gap-1.5">
             {[...BUILTIN_PRESETS, ...userPresets].map((p) => {
               const active = activePresetId === p.id;
+              const trailingPad = p.builtIn ? "pr-7" : "pr-12";
               return (
                 <div key={p.id} className="group relative">
                   <button
                     type="button"
                     onClick={() => applyPreset(p)}
                     aria-pressed={active}
-                    className={`inline-flex items-center gap-1.5 pl-2.5 ${
-                      p.builtIn ? "pr-2.5" : "pr-6"
-                    } py-1 rounded-full border text-[11px] font-bold transition-all ${
+                    className={`inline-flex items-center gap-1.5 pl-2.5 ${trailingPad} py-1 rounded-full border text-[11px] font-bold transition-all ${
                       active
                         ? "border-primary bg-primary text-primary-foreground"
                         : "border-border bg-background text-foreground/80 hover:border-foreground/40"
@@ -466,16 +562,35 @@ const SeatingMap = ({ tiers, activeTierId, onSelectTier, inventory }: SeatingMap
                     {p.builtIn && <Star className="w-3 h-3" strokeWidth={2.5} />}
                     {p.name}
                   </button>
-                  {!p.builtIn && (
+                  <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
                     <button
                       type="button"
-                      onClick={() => deletePreset(p.id)}
-                      aria-label={`Delete ${p.name} preset`}
-                      className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 rounded-full text-muted-foreground hover:text-destructive"
+                      onClick={() => sharePreset(p)}
+                      aria-label={`Share ${p.name} preset link`}
+                      title="Copy shareable link"
+                      className={`p-0.5 rounded-full transition-colors ${
+                        active
+                          ? "text-primary-foreground/80 hover:text-primary-foreground"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
                     >
-                      <Trash2 className="w-3 h-3" />
+                      <Share2 className="w-3 h-3" />
                     </button>
-                  )}
+                    {!p.builtIn && (
+                      <button
+                        type="button"
+                        onClick={() => deletePreset(p.id)}
+                        aria-label={`Delete ${p.name} preset`}
+                        className={`p-0.5 rounded-full transition-colors ${
+                          active
+                            ? "text-primary-foreground/80 hover:text-primary-foreground"
+                            : "text-muted-foreground hover:text-destructive"
+                        }`}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               );
             })}
