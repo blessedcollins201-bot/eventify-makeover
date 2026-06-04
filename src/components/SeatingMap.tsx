@@ -101,6 +101,57 @@ const BUILTIN_PRESETS: FilterPreset[] = [
 ];
 
 const PRESETS_STORAGE_KEY = "tm-seatmap-presets";
+const PRESET_QUERY_PARAM = "seats";
+
+/** Encode a preset into a compact URL-safe query string value. */
+function encodePresetToParam(preset: FilterPreset): string {
+  const payload = {
+    n: preset.name,
+    t: preset.tiers,
+    a: preset.amenities,
+    o: preset.availableOnly ? 1 : 0,
+    p:
+      preset.price === "cheapest"
+        ? "c"
+        : preset.price === "all"
+          ? "a"
+          : [preset.price[0], preset.price[1]],
+  };
+  const json = JSON.stringify(payload);
+  // base64url
+  const b64 =
+    typeof btoa !== "undefined" ? btoa(unescape(encodeURIComponent(json))) : json;
+  return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function decodePresetFromParam(value: string): FilterPreset | null {
+  try {
+    const b64 = value.replace(/-/g, "+").replace(/_/g, "/");
+    const json =
+      typeof atob !== "undefined"
+        ? decodeURIComponent(escape(atob(b64)))
+        : b64;
+    const data = JSON.parse(json);
+    const price: FilterPreset["price"] =
+      data.p === "c"
+        ? "cheapest"
+        : data.p === "a"
+          ? "all"
+          : Array.isArray(data.p) && data.p.length === 2
+            ? [Number(data.p[0]), Number(data.p[1])]
+            : "all";
+    return {
+      id: `shared-${Date.now()}`,
+      name: typeof data.n === "string" && data.n.trim() ? data.n : "Shared search",
+      tiers: Array.isArray(data.t) ? (data.t as TierId[]) : [],
+      amenities: Array.isArray(data.a) ? (data.a as AmenityId[]) : [],
+      availableOnly: !!data.o,
+      price,
+    };
+  } catch {
+    return null;
+  }
+}
 
 interface SeatingMapProps {
   tiers: SeatTierMeta[];
