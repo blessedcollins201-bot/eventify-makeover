@@ -315,6 +315,7 @@ const SeatingMap = ({ tiers, activeTierId, onSelectTier, inventory }: SeatingMap
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
+    setActivePresetId(null);
   };
   const toggleAmenity = (id: AmenityId) => {
     setAmenityFilter((prev) => {
@@ -435,7 +436,13 @@ const SeatingMap = ({ tiers, activeTierId, onSelectTier, inventory }: SeatingMap
           </div>
           <div className="flex items-center gap-3">
             <label className="flex items-center gap-2 text-[11px] font-bold text-foreground/80 cursor-pointer">
-              <Switch checked={availableOnly} onCheckedChange={setAvailableOnly} />
+              <Switch
+                checked={availableOnly}
+                onCheckedChange={(v) => {
+                  setAvailableOnly(v);
+                  setActivePresetId(null);
+                }}
+              />
               Available only
             </label>
             {filtersActive && (
@@ -490,9 +497,10 @@ const SeatingMap = ({ tiers, activeTierId, onSelectTier, inventory }: SeatingMap
               max={priceMax}
               step={1}
               value={effectivePriceRange}
-              onValueChange={(v) =>
-                setPriceRange([v[0] ?? priceMin, v[1] ?? priceMax])
-              }
+              onValueChange={(v) => {
+                setPriceRange([v[0] ?? priceMin, v[1] ?? priceMax]);
+                setActivePresetId(null);
+              }}
               className="w-full"
             />
           </div>
