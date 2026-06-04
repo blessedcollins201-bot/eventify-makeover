@@ -430,6 +430,85 @@ const SeatingMap = ({ tiers, activeTierId, onSelectTier, inventory }: SeatingMap
 
       {/* Filters */}
       <div className="px-5 py-4 border-b border-border bg-muted/30 space-y-3">
+        {/* Presets */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-foreground/70">
+              <Star className="w-3 h-3" /> Presets
+            </div>
+            <button
+              type="button"
+              onClick={() => setSavingPreset((s) => !s)}
+              className="inline-flex items-center gap-1 text-[11px] font-bold text-muted-foreground hover:text-foreground"
+            >
+              <BookmarkPlus className="w-3 h-3" />
+              {savingPreset ? "Cancel" : "Save current"}
+            </button>
+          </div>
+
+          <div className="flex flex-wrap gap-1.5">
+            {[...BUILTIN_PRESETS, ...userPresets].map((p) => {
+              const active = activePresetId === p.id;
+              return (
+                <div key={p.id} className="group relative">
+                  <button
+                    type="button"
+                    onClick={() => applyPreset(p)}
+                    aria-pressed={active}
+                    className={`inline-flex items-center gap-1.5 pl-2.5 ${
+                      p.builtIn ? "pr-2.5" : "pr-6"
+                    } py-1 rounded-full border text-[11px] font-bold transition-all ${
+                      active
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border bg-background text-foreground/80 hover:border-foreground/40"
+                    }`}
+                  >
+                    {p.builtIn && <Star className="w-3 h-3" strokeWidth={2.5} />}
+                    {p.name}
+                  </button>
+                  {!p.builtIn && (
+                    <button
+                      type="button"
+                      onClick={() => deletePreset(p.id)}
+                      aria-label={`Delete ${p.name} preset`}
+                      className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 rounded-full text-muted-foreground hover:text-destructive"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {savingPreset && (
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={presetName}
+                onChange={(e) => setPresetName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && saveCurrentAsPreset()}
+                placeholder="Name this preset…"
+                className="flex-1 px-2.5 py-1 rounded-md border border-border bg-background text-[11px] font-medium text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                autoFocus
+              />
+              <button
+                type="button"
+                onClick={saveCurrentAsPreset}
+                disabled={!presetName.trim() || !filtersActive}
+                className="px-2.5 py-1 rounded-md bg-primary text-primary-foreground text-[11px] font-bold disabled:opacity-50"
+              >
+                Save
+              </button>
+            </div>
+          )}
+          {savingPreset && !filtersActive && (
+            <div className="text-[11px] font-medium text-muted-foreground">
+              Apply some filters first, then save them as a preset.
+            </div>
+          )}
+        </div>
+
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-foreground/80">
             <Filter className="w-3.5 h-3.5" /> Filters
