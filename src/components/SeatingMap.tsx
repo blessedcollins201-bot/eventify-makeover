@@ -210,6 +210,28 @@ const SeatingMap = ({ tiers, activeTierId, onSelectTier, inventory }: SeatingMap
   const [availableOnly, setAvailableOnly] = useState(false);
   const [priceRange, setPriceRange] = useState<[number, number] | null>(null);
 
+  // ---- Presets ----
+  const [userPresets, setUserPresets] = useState<FilterPreset[]>([]);
+  const [activePresetId, setActivePresetId] = useState<string | null>(null);
+  const [savingPreset, setSavingPreset] = useState(false);
+  const [presetName, setPresetName] = useState("");
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(PRESETS_STORAGE_KEY);
+      if (raw) setUserPresets(JSON.parse(raw));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+  useEffect(() => {
+    try {
+      localStorage.setItem(PRESETS_STORAGE_KEY, JSON.stringify(userPresets));
+    } catch {
+      /* ignore */
+    }
+  }, [userPresets]);
+
   // Derive per-section capacity & remaining from the event's tier inventory.
   const sections = useMemo<SeatSection[]>(() => {
     const byTier = new Map<TierId, SectionTopology[]>();
