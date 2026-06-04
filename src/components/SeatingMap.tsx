@@ -48,6 +48,59 @@ const AMENITY_META: { id: AmenityId; label: string; icon: typeof Accessibility }
   { id: "family", label: "Family section", icon: Users },
 ];
 
+// ---- Filter presets ----
+interface FilterPreset {
+  id: string;
+  name: string;
+  builtIn?: boolean;
+  tiers: TierId[];
+  amenities: AmenityId[];
+  availableOnly: boolean;
+  /** 'cheapest' | 'all' | [min,max] – resolved against current event price bounds. */
+  price: "cheapest" | "all" | [number, number];
+}
+
+const BUILTIN_PRESETS: FilterPreset[] = [
+  {
+    id: "accessible-value",
+    name: "Accessible + Best Value",
+    builtIn: true,
+    tiers: [],
+    amenities: ["wheelchair"],
+    availableOnly: true,
+    price: "cheapest",
+  },
+  {
+    id: "premium-view",
+    name: "Premium View",
+    builtIn: true,
+    tiers: ["vip", "lower"],
+    amenities: ["bar"],
+    availableOnly: true,
+    price: "all",
+  },
+  {
+    id: "family",
+    name: "Family-Friendly",
+    builtIn: true,
+    tiers: [],
+    amenities: ["family", "concessions"],
+    availableOnly: true,
+    price: "all",
+  },
+  {
+    id: "available",
+    name: "Available Only",
+    builtIn: true,
+    tiers: [],
+    amenities: [],
+    availableOnly: true,
+    price: "all",
+  },
+];
+
+const PRESETS_STORAGE_KEY = "tm-seatmap-presets";
+
 interface SeatingMapProps {
   tiers: SeatTierMeta[];
   activeTierId: string;
