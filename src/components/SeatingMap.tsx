@@ -141,7 +141,7 @@ function decodePresetFromParam(value: string): FilterPreset | null {
             ? [Number(data.p[0]), Number(data.p[1])]
             : "all";
     return {
-      id: `shared-${Date.now()}`,
+      id: `shared-${value.slice(0, 16)}`,
       name: typeof data.n === "string" && data.n.trim() ? data.n : "Shared search",
       tiers: Array.isArray(data.t) ? (data.t as TierId[]) : [],
       amenities: Array.isArray(data.a) ? (data.a as AmenityId[]) : [],
