@@ -1,9 +1,10 @@
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import type { TierId, TierInventory } from "@/data/events";
-import { Accessibility, Beer, BookmarkPlus, Filter, Star, Trash2, Users, Utensils, X } from "lucide-react";
+import { Accessibility, Beer, BookmarkPlus, Filter, Share2, Star, Trash2, Users, Utensils, X } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
+import { toast } from "sonner";
 
 /** Static venue topology — capacity/remaining come from event inventory at runtime. */
 interface SectionTopology {
