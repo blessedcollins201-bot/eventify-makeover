@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { TierId, TierInventory } from "@/data/events";
-import { Accessibility, Beer, Filter, Users, Utensils, X } from "lucide-react";
+import { Accessibility, Beer, BookmarkPlus, Filter, Star, Trash2, Users, Utensils, X } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 
