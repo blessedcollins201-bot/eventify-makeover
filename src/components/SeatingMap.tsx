@@ -546,15 +546,14 @@ const SeatingMap = ({ tiers, activeTierId, onSelectTier, inventory }: SeatingMap
           <div className="flex flex-wrap gap-1.5">
             {[...BUILTIN_PRESETS, ...userPresets].map((p) => {
               const active = activePresetId === p.id;
+              const trailingPad = p.builtIn ? "pr-7" : "pr-12";
               return (
                 <div key={p.id} className="group relative">
                   <button
                     type="button"
                     onClick={() => applyPreset(p)}
                     aria-pressed={active}
-                    className={`inline-flex items-center gap-1.5 pl-2.5 ${
-                      p.builtIn ? "pr-2.5" : "pr-6"
-                    } py-1 rounded-full border text-[11px] font-bold transition-all ${
+                    className={`inline-flex items-center gap-1.5 pl-2.5 ${trailingPad} py-1 rounded-full border text-[11px] font-bold transition-all ${
                       active
                         ? "border-primary bg-primary text-primary-foreground"
                         : "border-border bg-background text-foreground/80 hover:border-foreground/40"
@@ -563,16 +562,35 @@ const SeatingMap = ({ tiers, activeTierId, onSelectTier, inventory }: SeatingMap
                     {p.builtIn && <Star className="w-3 h-3" strokeWidth={2.5} />}
                     {p.name}
                   </button>
-                  {!p.builtIn && (
+                  <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
                     <button
                       type="button"
-                      onClick={() => deletePreset(p.id)}
-                      aria-label={`Delete ${p.name} preset`}
-                      className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 rounded-full text-muted-foreground hover:text-destructive"
+                      onClick={() => sharePreset(p)}
+                      aria-label={`Share ${p.name} preset link`}
+                      title="Copy shareable link"
+                      className={`p-0.5 rounded-full transition-colors ${
+                        active
+                          ? "text-primary-foreground/80 hover:text-primary-foreground"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
                     >
-                      <Trash2 className="w-3 h-3" />
+                      <Share2 className="w-3 h-3" />
                     </button>
-                  )}
+                    {!p.builtIn && (
+                      <button
+                        type="button"
+                        onClick={() => deletePreset(p.id)}
+                        aria-label={`Delete ${p.name} preset`}
+                        className={`p-0.5 rounded-full transition-colors ${
+                          active
+                            ? "text-primary-foreground/80 hover:text-primary-foreground"
+                            : "text-muted-foreground hover:text-destructive"
+                        }`}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               );
             })}
