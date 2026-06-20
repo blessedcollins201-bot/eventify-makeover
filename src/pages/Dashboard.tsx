@@ -27,9 +27,12 @@ import {
   ArrowDownRight,
   HelpCircle,
   Plus,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { clearUser, getUser, MockUser } from "@/lib/auth";
 import { events } from "@/data/events";
+import { useTheme } from "@/hooks/use-theme";
 
 type TabId = "overview" | "tickets" | "saved" | "rewards" | "settings";
 
@@ -47,6 +50,7 @@ const Dashboard = () => {
   const location = useLocation();
   const [user, setUser] = useState<MockUser | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { theme, toggle: toggleTheme } = useTheme();
   const active: TabId = (TABS.find((t) => t.id === tab)?.id ?? "overview") as TabId;
 
   useEffect(() => {
@@ -202,6 +206,14 @@ const Dashboard = () => {
           <button className="relative w-10 h-10 rounded-lg hover:bg-muted flex items-center justify-center" aria-label="Notifications">
             <Bell className="w-5 h-5 text-muted-foreground" />
             <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-accent" />
+          </button>
+          <button
+            onClick={toggleTheme}
+            className="w-10 h-10 rounded-lg hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+            aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+            title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+          >
+            {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </button>
           <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-sm font-black text-primary-foreground">
             {user.name.charAt(0).toUpperCase()}
