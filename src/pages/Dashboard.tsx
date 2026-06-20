@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, NavLink, useLocation, useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Ticket,
@@ -44,6 +44,7 @@ const TABS: { id: TabId; label: string; icon: typeof Ticket }[] = [
 const Dashboard = () => {
   const navigate = useNavigate();
   const { tab } = useParams<{ tab?: string }>();
+  const location = useLocation();
   const [user, setUser] = useState<MockUser | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const active: TabId = (TABS.find((t) => t.id === tab)?.id ?? "overview") as TabId;
@@ -59,7 +60,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     setMobileOpen(false);
-  }, [active]);
+  }, [location.pathname]);
 
   const upcoming = useMemo(() => events.slice(0, 3), []);
   const saved = useMemo(() => events.slice(2, 5), []);
@@ -99,41 +100,52 @@ const Dashboard = () => {
         <nav className="flex-1 overflow-y-auto p-3 space-y-0.5">
           <p className="px-3 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Menu</p>
           {TABS.map((t) => {
-            const isActive = active === t.id;
+            const to = t.id === "overview" ? "/dashboard" : `/dashboard/${t.id}`;
             return (
-              <Link
+              <NavLink
                 key={t.id}
-                to={t.id === "overview" ? "/dashboard" : `/dashboard/${t.id}`}
-                className={`group flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                  isActive
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
+                to={to}
+                end={t.id === "overview"}
+                aria-label={t.label}
               >
-                <t.icon className={`w-4 h-4 ${isActive ? "text-primary" : ""}`} />
-                <span className="flex-1">{t.label}</span>
-                {t.id === "tickets" && (
-                  <span className="px-1.5 py-0.5 rounded-md bg-primary text-primary-foreground text-[10px] font-bold">3</span>
+                {({ isActive }) => (
+                  <span
+                    aria-current={isActive ? "page" : undefined}
+                    className={`group relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                      isActive
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    }`}
+                  >
+                    {isActive && (
+                      <motion.span
+                        layoutId="sidebar-active-indicator"
+                        className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full bg-primary"
+                        transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                      />
+                    )}
+                    <t.icon className={`w-4 h-4 ${isActive ? "text-primary" : ""}`} />
+                    <span className="flex-1">{t.label}</span>
+                    {t.id === "tickets" && (
+                      <span
+                        className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
+                          isActive
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted text-foreground group-hover:bg-primary group-hover:text-primary-foreground"
+                        }`}
+                      >
+                        3
+                      </span>
+                    )}
+                  </span>
                 )}
-              </Link>
+              </NavLink>
             );
           })}
 
           <p className="px-3 pt-5 pb-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Support</p>
-          <Link
-            to="/help"
-            className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-          >
-            <HelpCircle className="w-4 h-4" />
-            Help center
-          </Link>
-          <Link
-            to="/"
-            className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-          >
-            <Search className="w-4 h-4" />
-            Browse events
-          </Link>
+          <SidebarLink to="/help" icon={HelpCircle} label="Help center" matchPrefix />
+          <SidebarLink to="/" icon={Search} label="Browse events" end />
         </nav>
 
         <div className="p-3 border-t border-border">
@@ -209,6 +221,52 @@ const Dashboard = () => {
 };
 
 /* ---------- Sub-sections ---------- */
+
+const SidebarLink = ({
+  to,
+  icon: Icon,
+  label,
+  end,
+  matchPrefix,
+}: {
+  to: string;
+  icon: typeof Ticket;
+  label: string;
+  end?: boolean;
+  matchPrefix?: boolean;
+}) => {
+  const location = useLocation();
+  const active = matchPrefix
+    ? location.pathname === to || location.pathname.startsWith(`${to}/`)
+    : undefined;
+  return (
+    <NavLink to={to} end={end}>
+      {({ isActive }) => {
+        const on = active ?? isActive;
+        return (
+          <span
+            aria-current={on ? "page" : undefined}
+            className={`relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
+              on
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            }`}
+          >
+            {on && (
+              <motion.span
+                layoutId="sidebar-active-indicator"
+                className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full bg-primary"
+                transition={{ type: "spring", stiffness: 380, damping: 30 }}
+              />
+            )}
+            <Icon className={`w-4 h-4 ${on ? "text-primary" : ""}`} />
+            <span className="flex-1">{label}</span>
+          </span>
+        );
+      }}
+    </NavLink>
+  );
+};
 
 const STATS = [
   { label: "Upcoming tickets", value: "12", delta: "+2", trend: "up" as const, icon: Ticket, accent: "text-primary", bg: "bg-primary/10" },
