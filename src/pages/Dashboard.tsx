@@ -20,15 +20,22 @@ import {
   Music,
   Trophy,
   Mic,
+  LayoutDashboard,
+  Search,
+  Menu,
+  X,
+  ArrowUpRight,
+  ArrowDownRight,
+  HelpCircle,
+  Plus,
 } from "lucide-react";
-import Navbar from "@/components/Navbar";
 import { clearUser, getUser, MockUser } from "@/lib/auth";
 import { events } from "@/data/events";
 
 type TabId = "overview" | "tickets" | "saved" | "rewards" | "settings";
 
 const TABS: { id: TabId; label: string; icon: typeof Ticket }[] = [
-  { id: "overview", label: "Overview", icon: TrendingUp },
+  { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "tickets", label: "My Tickets", icon: Ticket },
   { id: "saved", label: "Saved Events", icon: Heart },
   { id: "rewards", label: "Rewards", icon: Gift },
@@ -39,6 +46,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { tab } = useParams<{ tab?: string }>();
   const [user, setUser] = useState<MockUser | null>(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const active: TabId = (TABS.find((t) => t.id === tab)?.id ?? "overview") as TabId;
 
   useEffect(() => {
@@ -50,100 +58,152 @@ const Dashboard = () => {
     setUser(u);
   }, [navigate]);
 
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [active]);
+
   const upcoming = useMemo(() => events.slice(0, 3), []);
   const saved = useMemo(() => events.slice(2, 5), []);
 
   if (!user) return null;
 
-  return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
+  const currentLabel = TABS.find((t) => t.id === active)?.label ?? "Overview";
+  const signOut = () => {
+    clearUser();
+    navigate("/");
+  };
 
-      <div className="pt-24 pb-16">
-        {/* Hero */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="relative overflow-hidden rounded-3xl bg-foreground text-background p-8 sm:p-10"
+  return (
+    <div className="min-h-screen bg-muted/30 flex">
+      {/* Sidebar */}
+      <aside
+        className={`fixed lg:sticky top-0 left-0 z-40 h-screen w-64 shrink-0 border-r border-border bg-card flex flex-col transition-transform lg:translate-x-0 ${
+          mobileOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="h-16 px-5 flex items-center justify-between border-b border-border">
+          <Link to="/" className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+              <Ticket className="w-4 h-4 text-primary-foreground" />
+            </div>
+            <span className="font-black text-foreground tracking-tight">TicketHub</span>
+          </Link>
+          <button
+            onClick={() => setMobileOpen(false)}
+            className="lg:hidden w-8 h-8 rounded-md hover:bg-muted flex items-center justify-center"
+            aria-label="Close menu"
           >
-            <div className="absolute inset-0 -z-0">
-              <div className="absolute -top-20 -right-10 w-[420px] h-[420px] rounded-full bg-primary/40 blur-3xl" />
-              <div className="absolute -bottom-20 left-10 w-[360px] h-[360px] rounded-full bg-accent/30 blur-3xl" />
-            </div>
-            <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div className="flex items-center gap-5">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-2xl font-black text-primary-foreground">
-                  {user.name.charAt(0).toUpperCase()}
-                </div>
-                <div>
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-background/10 text-background text-[10px] font-bold uppercase tracking-wider mb-2">
-                    <Sparkles className="w-3 h-3" /> Gold member
-                  </span>
-                  <h1 className="text-3xl sm:text-4xl font-black tracking-tight">
-                    Welcome back, {user.name.split(" ")[0]}.
-                  </h1>
-                  <p className="text-background/60 font-medium text-sm mt-1">{user.email}</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-3 md:gap-5">
-                {[
-                  { label: "Tickets", value: "12" },
-                  { label: "Saved", value: "28" },
-                  { label: "Points", value: "2,480" },
-                ].map((s) => (
-                  <div key={s.label} className="text-center md:text-right">
-                    <div className="text-2xl sm:text-3xl font-black">{s.value}</div>
-                    <div className="text-[10px] sm:text-xs text-background/50 font-bold uppercase tracking-wider">
-                      {s.label}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </motion.div>
+            <X className="w-4 h-4" />
+          </button>
         </div>
 
-        {/* Tabs */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar border-b border-border">
-            {TABS.map((t) => {
-              const isActive = active === t.id;
-              return (
-                <Link
-                  key={t.id}
-                  to={t.id === "overview" ? "/dashboard" : `/dashboard/${t.id}`}
-                  className={`flex items-center gap-2 px-4 py-3 text-sm font-bold whitespace-nowrap border-b-2 transition-colors ${
-                    isActive
-                      ? "border-primary text-foreground"
-                      : "border-transparent text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  <t.icon className="w-4 h-4" />
-                  {t.label}
-                </Link>
-              );
-            })}
+        <nav className="flex-1 overflow-y-auto p-3 space-y-0.5">
+          <p className="px-3 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Menu</p>
+          {TABS.map((t) => {
+            const isActive = active === t.id;
+            return (
+              <Link
+                key={t.id}
+                to={t.id === "overview" ? "/dashboard" : `/dashboard/${t.id}`}
+                className={`group flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                  isActive
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                <t.icon className={`w-4 h-4 ${isActive ? "text-primary" : ""}`} />
+                <span className="flex-1">{t.label}</span>
+                {t.id === "tickets" && (
+                  <span className="px-1.5 py-0.5 rounded-md bg-primary text-primary-foreground text-[10px] font-bold">3</span>
+                )}
+              </Link>
+            );
+          })}
+
+          <p className="px-3 pt-5 pb-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Support</p>
+          <Link
+            to="/help"
+            className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          >
+            <HelpCircle className="w-4 h-4" />
+            Help center
+          </Link>
+          <Link
+            to="/"
+            className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          >
+            <Search className="w-4 h-4" />
+            Browse events
+          </Link>
+        </nav>
+
+        <div className="p-3 border-t border-border">
+          <div className="flex items-center gap-3 p-2 rounded-lg">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-sm font-black text-primary-foreground shrink-0">
+              {user.name.charAt(0).toUpperCase()}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold text-foreground truncate">{user.name}</p>
+              <p className="text-xs text-muted-foreground truncate">Gold member</p>
+            </div>
+            <button
+              onClick={signOut}
+              className="w-8 h-8 rounded-md hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground"
+              aria-label="Sign out"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
         </div>
+      </aside>
 
-        {/* Content */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
-          {active === "overview" && <Overview upcoming={upcoming} />}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-foreground/40 lg:hidden"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      {/* Main */}
+      <div className="flex-1 min-w-0 flex flex-col">
+        {/* Topbar */}
+        <header className="sticky top-0 z-20 h-16 bg-background/80 backdrop-blur border-b border-border flex items-center gap-3 px-4 sm:px-6">
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="lg:hidden w-9 h-9 rounded-md hover:bg-muted flex items-center justify-center"
+            aria-label="Open menu"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Dashboard</p>
+            <h1 className="text-base sm:text-lg font-black text-foreground leading-tight">{currentLabel}</h1>
+          </div>
+          <div className="flex-1" />
+          <div className="hidden md:flex items-center gap-2 h-10 px-3 rounded-lg border border-border bg-muted/50 w-72">
+            <Search className="w-4 h-4 text-muted-foreground" />
+            <input
+              placeholder="Search events, orders, venues…"
+              className="flex-1 bg-transparent text-sm placeholder:text-muted-foreground focus:outline-none"
+            />
+            <kbd className="text-[10px] font-bold text-muted-foreground border border-border rounded px-1.5 py-0.5">⌘K</kbd>
+          </div>
+          <button className="relative w-10 h-10 rounded-lg hover:bg-muted flex items-center justify-center" aria-label="Notifications">
+            <Bell className="w-5 h-5 text-muted-foreground" />
+            <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-accent" />
+          </button>
+          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-sm font-black text-primary-foreground">
+            {user.name.charAt(0).toUpperCase()}
+          </div>
+        </header>
+
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6">
+          {active === "overview" && <Overview user={user} upcoming={upcoming} />}
           {active === "tickets" && <Tickets upcoming={upcoming} />}
           {active === "saved" && <Saved saved={saved} />}
           {active === "rewards" && <Rewards />}
-          {active === "settings" && (
-            <SettingsTab
-              user={user}
-              onSignOut={() => {
-                clearUser();
-                navigate("/");
-              }}
-            />
-          )}
-        </div>
+          {active === "settings" && <SettingsTab user={user} onSignOut={signOut} />}
+        </main>
       </div>
     </div>
   );
@@ -151,8 +211,64 @@ const Dashboard = () => {
 
 /* ---------- Sub-sections ---------- */
 
-const Overview = ({ upcoming }: { upcoming: typeof events }) => (
-  <div className="grid lg:grid-cols-3 gap-6">
+const STATS = [
+  { label: "Upcoming tickets", value: "12", delta: "+2", trend: "up" as const, icon: Ticket, accent: "text-primary", bg: "bg-primary/10" },
+  { label: "Saved events", value: "28", delta: "+5", trend: "up" as const, icon: Heart, accent: "text-accent", bg: "bg-accent/10" },
+  { label: "Reward points", value: "2,480", delta: "+240", trend: "up" as const, icon: Gift, accent: "text-primary", bg: "bg-primary/10" },
+  { label: "Spend this year", value: "$1,840", delta: "-12%", trend: "down" as const, icon: CreditCard, accent: "text-foreground", bg: "bg-muted" },
+];
+
+const Overview = ({ user, upcoming }: { user: MockUser; upcoming: typeof events }) => (
+  <>
+    {/* Greeting */}
+    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+      <div>
+        <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">
+          Welcome back, {user.name.split(" ")[0]}.
+        </h2>
+        <p className="text-sm text-muted-foreground font-medium mt-1">
+          Here's what's happening with your account today.
+        </p>
+      </div>
+      <Link
+        to="/"
+        className="inline-flex items-center gap-1.5 h-10 px-4 rounded-lg bg-foreground text-background text-sm font-bold hover:opacity-90"
+      >
+        <Plus className="w-4 h-4" /> Find events
+      </Link>
+    </div>
+
+    {/* Stat cards */}
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {STATS.map((s, i) => (
+        <motion.div
+          key={s.label}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: i * 0.05 }}
+          className="rounded-2xl border border-border bg-card p-5"
+        >
+          <div className="flex items-start justify-between">
+            <div className={`w-10 h-10 rounded-xl ${s.bg} ${s.accent} flex items-center justify-center`}>
+              <s.icon className="w-4 h-4" />
+            </div>
+            <span
+              className={`inline-flex items-center gap-0.5 text-xs font-bold ${
+                s.trend === "up" ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"
+              }`}
+            >
+              {s.trend === "up" ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+              {s.delta}
+            </span>
+          </div>
+          <p className="text-2xl font-black text-foreground mt-4">{s.value}</p>
+          <p className="text-xs text-muted-foreground font-medium mt-1">{s.label}</p>
+        </motion.div>
+      ))}
+    </div>
+
+    {/* Main grid */}
+    <div className="grid lg:grid-cols-3 gap-6">
     <div className="lg:col-span-2 space-y-6">
       <SectionCard title="Next up" cta={{ to: "/dashboard/tickets", label: "All tickets" }}>
         <div className="space-y-3">
@@ -168,7 +284,7 @@ const Overview = ({ upcoming }: { upcoming: typeof events }) => (
             <Link
               to={`/events/${e.id}`}
               key={e.id}
-              className="group rounded-2xl overflow-hidden border border-border bg-card hover:shadow-lg transition-all"
+              className="group rounded-2xl overflow-hidden border border-border bg-background hover:shadow-lg transition-all"
             >
               <div className="aspect-[4/3] overflow-hidden">
                 <img src={e.image} alt={e.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
@@ -223,7 +339,8 @@ const Overview = ({ upcoming }: { upcoming: typeof events }) => (
         </div>
       </SectionCard>
     </div>
-  </div>
+    </div>
+  </>
 );
 
 const Tickets = ({ upcoming }: { upcoming: typeof events }) => (
