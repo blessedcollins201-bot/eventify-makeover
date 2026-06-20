@@ -13,7 +13,6 @@ import {
   MapPin,
   Download,
   QrCode,
-  TrendingUp,
   Sparkles,
   ChevronRight,
   Star,
