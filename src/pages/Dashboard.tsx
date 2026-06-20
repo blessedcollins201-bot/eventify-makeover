@@ -222,6 +222,52 @@ const Dashboard = () => {
 
 /* ---------- Sub-sections ---------- */
 
+const SidebarLink = ({
+  to,
+  icon: Icon,
+  label,
+  end,
+  matchPrefix,
+}: {
+  to: string;
+  icon: typeof Ticket;
+  label: string;
+  end?: boolean;
+  matchPrefix?: boolean;
+}) => {
+  const location = useLocation();
+  const active = matchPrefix
+    ? location.pathname === to || location.pathname.startsWith(`${to}/`)
+    : undefined;
+  return (
+    <NavLink to={to} end={end}>
+      {({ isActive }) => {
+        const on = active ?? isActive;
+        return (
+          <span
+            aria-current={on ? "page" : undefined}
+            className={`relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
+              on
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            }`}
+          >
+            {on && (
+              <motion.span
+                layoutId="sidebar-active-indicator"
+                className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full bg-primary"
+                transition={{ type: "spring", stiffness: 380, damping: 30 }}
+              />
+            )}
+            <Icon className={`w-4 h-4 ${on ? "text-primary" : ""}`} />
+            <span className="flex-1">{label}</span>
+          </span>
+        );
+      }}
+    </NavLink>
+  );
+};
+
 const STATS = [
   { label: "Upcoming tickets", value: "12", delta: "+2", trend: "up" as const, icon: Ticket, accent: "text-primary", bg: "bg-primary/10" },
   { label: "Saved events", value: "28", delta: "+5", trend: "up" as const, icon: Heart, accent: "text-accent", bg: "bg-accent/10" },
