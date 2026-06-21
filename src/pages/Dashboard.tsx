@@ -29,6 +29,8 @@ import {
   Plus,
   Sun,
   Moon,
+  Zap,
+  ArrowRight,
 } from "lucide-react";
 import { clearUser, getUser, MockUser } from "@/lib/auth";
 import { events } from "@/data/events";
@@ -87,10 +89,12 @@ const Dashboard = () => {
       >
         <div className="h-16 px-5 flex items-center justify-between border-b border-border">
           <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-              <Ticket className="w-4 h-4 text-primary-foreground" />
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/20">
+              <Zap className="w-4 h-4 text-primary-foreground" strokeWidth={3} />
             </div>
-            <span className="font-black text-foreground tracking-tight">TicketHub</span>
+            <span className="font-display text-xl font-bold text-foreground tracking-tight">
+              ARENA<span className="text-primary">X</span>
+            </span>
           </Link>
           <button
             onClick={() => setMobileOpen(false)}
