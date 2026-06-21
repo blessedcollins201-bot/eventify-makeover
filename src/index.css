@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -52,34 +50,36 @@
   }
 
   .dark {
-    --background: 222 47% 5%;
-    --foreground: 210 40% 98%;
-    --card: 222 47% 8%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222 47% 8%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 213 97% 50%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 330 81% 60%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
-    --ring: 213 97% 50%;
-    --surface: 222 47% 8%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Neon Court — arena-dark with neon green + magenta */
+    --background: 225 52% 8%;          /* #0A0F1F */
+    --foreground: 215 100% 95%;        /* #E6F1FF */
+    --card: 229 43% 18%;               /* #1A2240 */
+    --card-foreground: 215 100% 95%;
+    --popover: 229 43% 18%;
+    --popover-foreground: 215 100% 95%;
+    --primary: 134 87% 72%;            /* #7CF59B neon green */
+    --primary-foreground: 225 52% 8%;
+    --secondary: 229 43% 22%;
+    --secondary-foreground: 215 100% 95%;
+    --muted: 229 43% 14%;
+    --muted-foreground: 215 30% 70%;
+    --accent: 314 100% 62%;            /* #FF3DCB magenta */
+    --accent-foreground: 225 52% 8%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 215 40% 95% / 0.08;
+    --border: 215 30% 25%;
+    --input: 229 43% 22%;
+    --ring: 134 87% 72%;
+    --surface: 229 43% 14%;
+    --sidebar-background: 225 52% 6%;
+    --sidebar-foreground: 215 100% 95%;
+    --sidebar-primary: 134 87% 72%;
+    --sidebar-primary-foreground: 225 52% 8%;
+    --sidebar-accent: 229 43% 18%;
+    --sidebar-accent-foreground: 215 100% 95%;
+    --sidebar-border: 215 30% 22%;
+    --sidebar-ring: 134 87% 72%;
   }
 }
 
@@ -90,7 +90,12 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'DM Sans', system-ui, sans-serif;
+  }
+
+  .font-display {
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    letter-spacing: -0.02em;
   }
 }
 
