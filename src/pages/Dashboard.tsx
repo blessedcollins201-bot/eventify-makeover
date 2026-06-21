@@ -285,136 +285,213 @@ const SidebarLink = ({
 };
 
 const STATS = [
-  { label: "Upcoming tickets", value: "12", delta: "+2", trend: "up" as const, icon: Ticket, accent: "text-primary", bg: "bg-primary/10" },
-  { label: "Saved events", value: "28", delta: "+5", trend: "up" as const, icon: Heart, accent: "text-accent", bg: "bg-accent/10" },
-  { label: "Reward points", value: "2,480", delta: "+240", trend: "up" as const, icon: Gift, accent: "text-primary", bg: "bg-primary/10" },
-  { label: "Spend this year", value: "$1,840", delta: "-12%", trend: "down" as const, icon: CreditCard, accent: "text-foreground", bg: "bg-muted" },
+  { label: "Active tickets",  value: "12",    delta: "+2",    trend: "up" as const,   icon: Ticket,     accent: "text-primary", bg: "bg-primary/10", hover: "hover:border-primary/50" },
+  { label: "Arena balance",   value: "$1,420",delta: "Total", trend: "flat" as const, icon: CreditCard, accent: "text-accent",  bg: "bg-accent/10",  hover: "hover:border-accent/50" },
+  { label: "Fan streak",      value: "14 Days",delta: "+3d",  trend: "up" as const,   icon: Sparkles,   accent: "text-foreground", bg: "bg-foreground/10", hover: "" },
+  { label: "Rank tier",       value: "LEGEND",delta: "Top 4%",trend: "up" as const,   icon: Trophy,     accent: "text-primary", bg: "bg-primary/10", hover: "hover:border-primary/50", valueAccent: "text-primary" },
 ];
 
-const Overview = ({ user, upcoming }: { user: MockUser; upcoming: typeof events }) => (
-  <>
-    {/* Greeting */}
-    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
-      <div>
-        <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">
-          Welcome back, {user.name.split(" ")[0]}.
-        </h2>
-        <p className="text-sm text-muted-foreground font-medium mt-1">
-          Here's what's happening with your account today.
-        </p>
+const Overview = ({ user, upcoming }: { user: MockUser; upcoming: typeof events }) => {
+  const nextUp = upcoming[0];
+  const recs = events.slice(1, 4);
+  return (
+    <div className="space-y-10">
+      {/* Stat cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        {STATS.map((s, i) => (
+          <motion.div
+            key={s.label}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.05 }}
+            className={`rounded-3xl border border-border bg-card p-6 shadow-xl transition-all ${s.hover}`}
+          >
+            <div className="flex justify-between items-start mb-4">
+              <div className={`p-2.5 rounded-xl ${s.bg} ${s.accent}`}>
+                <s.icon className="w-5 h-5" strokeWidth={2.25} />
+              </div>
+              <span
+                className={`text-[11px] font-bold inline-flex items-center gap-0.5 ${
+                  s.trend === "up" ? "text-primary" : s.trend === "down" ? "text-destructive" : "text-muted-foreground"
+                }`}
+              >
+                {s.trend === "up" && <ArrowUpRight className="w-3 h-3" />}
+                {s.trend === "down" && <ArrowDownRight className="w-3 h-3" />}
+                {s.delta}
+              </span>
+            </div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">{s.label}</p>
+            <h3 className={`font-display text-3xl font-bold mt-1 ${(s as any).valueAccent ?? "text-foreground"}`}>
+              {s.value}
+            </h3>
+          </motion.div>
+        ))}
       </div>
-      <Link
-        to="/"
-        className="inline-flex items-center gap-1.5 h-10 px-4 rounded-lg bg-foreground text-background text-sm font-bold hover:opacity-90"
-      >
-        <Plus className="w-4 h-4" /> Find events
-      </Link>
-    </div>
 
-    {/* Stat cards */}
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      {STATS.map((s, i) => (
-        <motion.div
-          key={s.label}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: i * 0.05 }}
-          className="rounded-2xl border border-border bg-card p-5"
-        >
-          <div className="flex items-start justify-between">
-            <div className={`w-10 h-10 rounded-xl ${s.bg} ${s.accent} flex items-center justify-center`}>
-              <s.icon className="w-4 h-4" />
-            </div>
-            <span
-              className={`inline-flex items-center gap-0.5 text-xs font-bold ${
-                s.trend === "up" ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"
-              }`}
-            >
-              {s.trend === "up" ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-              {s.delta}
-            </span>
-          </div>
-          <p className="text-2xl font-black text-foreground mt-4">{s.value}</p>
-          <p className="text-xs text-muted-foreground font-medium mt-1">{s.label}</p>
-        </motion.div>
-      ))}
-    </div>
-
-    {/* Main grid */}
-    <div className="grid lg:grid-cols-3 gap-6">
-    <div className="lg:col-span-2 space-y-6">
-      <SectionCard title="Next up" cta={{ to: "/dashboard/tickets", label: "All tickets" }}>
-        <div className="space-y-3">
-          {upcoming.map((e) => (
-            <TicketRow key={e.id} event={e} />
-          ))}
-        </div>
-      </SectionCard>
-
-      <SectionCard title="Recommended for you" cta={{ to: "/", label: "Browse" }}>
-        <div className="grid sm:grid-cols-3 gap-4">
-          {events.slice(3, 6).map((e) => (
-            <Link
-              to={`/events/${e.id}`}
-              key={e.id}
-              className="group rounded-2xl overflow-hidden border border-border bg-background hover:shadow-lg transition-all"
-            >
-              <div className="aspect-[4/3] overflow-hidden">
-                <img src={e.image} alt={e.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-              </div>
-              <div className="p-3">
-                <p className="text-xs text-primary font-bold uppercase tracking-wider">{e.category}</p>
-                <p className="text-sm font-bold text-foreground line-clamp-1 mt-1">{e.title}</p>
-                <p className="text-xs text-muted-foreground font-medium mt-0.5">{e.date.split("•")[0]}</p>
-              </div>
+      {/* Main grid: hero next-up + recommended rail */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Next Up Hero */}
+        <div className="lg:col-span-2">
+          <div className="flex justify-between items-end mb-5">
+            <h2 className="font-display text-xl font-bold text-foreground">Upcoming experience</h2>
+            <Link to="/dashboard/tickets" className="text-sm font-bold text-primary hover:underline underline-offset-4">
+              Full schedule
             </Link>
-          ))}
+          </div>
+          {nextUp && (
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="relative rounded-[2rem] overflow-hidden group min-h-[420px] flex flex-col justify-end p-8 sm:p-10 border border-border bg-card"
+            >
+              <div className="absolute inset-0">
+                <img
+                  src={nextUp.image}
+                  alt={nextUp.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-background/10" />
+                <div className="absolute inset-0 bg-gradient-to-tr from-background/40 via-transparent to-accent/10" />
+              </div>
+              <div className="relative z-10">
+                <div className="flex flex-wrap items-center gap-2 mb-6">
+                  <span className="px-3 py-1.5 bg-accent text-accent-foreground text-[10px] font-black uppercase rounded-lg tracking-widest">
+                    Main stage
+                  </span>
+                  <span className="px-3 py-1.5 bg-foreground/10 backdrop-blur-md text-foreground text-[10px] font-bold uppercase rounded-lg tracking-widest border border-border">
+                    {nextUp.category}
+                  </span>
+                </div>
+                <h3 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground leading-[0.95] mb-3">
+                  {nextUp.title}
+                </h3>
+                <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-muted-foreground font-medium mb-8">
+                  <span className="inline-flex items-center gap-1.5"><Calendar className="w-4 h-4" /> {nextUp.date}</span>
+                  <span className="inline-flex items-center gap-1.5"><MapPin className="w-4 h-4" /> {nextUp.venue}</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-6 sm:gap-10">
+                  <Link
+                    to={`/events/${nextUp.id}`}
+                    className="px-8 sm:px-10 py-4 sm:py-5 bg-primary text-primary-foreground rounded-2xl font-black text-xs sm:text-sm uppercase tracking-widest hover:bg-foreground transition-all shadow-2xl shadow-primary/20 inline-flex items-center gap-2"
+                  >
+                    Access ticket <ArrowRight className="w-4 h-4" />
+                  </Link>
+                  <div className="flex flex-col">
+                    <span className="text-muted-foreground text-[10px] uppercase font-bold tracking-[0.2em] mb-1">
+                      Door opens in
+                    </span>
+                    <Countdown />
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
         </div>
-      </SectionCard>
-    </div>
 
-    <div className="space-y-6">
-      <SectionCard title="Recent activity">
-        <ul className="space-y-3">
-          {[
-            { icon: Ticket, color: "text-primary", text: "Ordered 2× The Weeknd tickets", time: "2h ago" },
-            { icon: Heart, color: "text-accent", text: "Saved NBA Playoffs to wishlist", time: "Yesterday" },
-            { icon: Gift, color: "text-primary", text: "Earned 240 reward points", time: "3 days ago" },
-            { icon: Bell, color: "text-accent", text: "Presale alert: Foo Fighters", time: "5 days ago" },
-          ].map((a, i) => (
-            <li key={i} className="flex items-start gap-3">
-              <div className={`w-9 h-9 rounded-xl bg-muted flex items-center justify-center shrink-0 ${a.color}`}>
-                <a.icon className="w-4 h-4" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-foreground">{a.text}</p>
-                <p className="text-xs text-muted-foreground font-medium">{a.time}</p>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </SectionCard>
-
-      <SectionCard title="Reward tier">
-        <div className="rounded-2xl bg-gradient-to-br from-foreground to-foreground/80 text-background p-5 relative overflow-hidden">
-          <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-primary/30 blur-2xl" />
-          <div className="relative">
-            <div className="flex items-center gap-2 mb-3">
-              <Star className="w-4 h-4 text-primary" fill="currentColor" />
-              <span className="text-xs font-bold uppercase tracking-wider">Gold tier</span>
-            </div>
-            <p className="text-3xl font-black">2,480 pts</p>
-            <p className="text-xs text-background/60 font-medium mt-1">520 pts until Platinum</p>
-            <div className="mt-4 h-2 rounded-full bg-background/10 overflow-hidden">
-              <div className="h-full w-[82%] bg-gradient-to-r from-primary to-accent rounded-full" />
-            </div>
+        {/* Recommended */}
+        <div className="flex flex-col">
+          <div className="flex justify-between items-end mb-5">
+            <h2 className="font-display text-xl font-bold text-foreground">Recommended</h2>
+            <Link to="/" className="text-xs font-bold uppercase tracking-wider text-primary hover:underline">
+              See all
+            </Link>
+          </div>
+          <div className="space-y-3">
+            {recs.map((e) => (
+              <Link
+                key={e.id}
+                to={`/events/${e.id}`}
+                className="p-3 bg-card rounded-2xl border border-border flex items-center gap-4 hover:border-primary/40 transition-all group"
+              >
+                <img
+                  src={e.image}
+                  alt={e.title}
+                  className="w-16 h-16 rounded-xl object-cover flex-shrink-0"
+                />
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-foreground font-bold text-sm group-hover:text-primary transition-colors truncate">
+                    {e.title}
+                  </h4>
+                  <p className="text-muted-foreground text-xs mt-0.5 truncate">
+                    {e.date.split("•")[0].trim()} · {e.venue.split(",")[0]}
+                  </p>
+                </div>
+                <span className="text-accent font-display font-bold text-base shrink-0">{e.price}</span>
+              </Link>
+            ))}
+            <Link
+              to="/"
+              className="w-full py-4 border-2 border-dashed border-border rounded-2xl text-muted-foreground font-bold text-[11px] uppercase tracking-widest hover:border-primary/40 hover:text-primary transition-all flex items-center justify-center gap-2"
+            >
+              View all drops <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
         </div>
-      </SectionCard>
+      </div>
+
+      {/* Secondary row: activity + tier */}
+      <div className="grid lg:grid-cols-3 gap-6">
+        <SectionCard title="Recent activity" className="lg:col-span-2">
+          <ul className="grid sm:grid-cols-2 gap-3">
+            {[
+              { icon: Ticket, color: "text-primary bg-primary/10", text: "Ordered 2× The Weeknd tickets", time: "2h ago" },
+              { icon: Heart, color: "text-accent bg-accent/10", text: "Saved NBA Playoffs to wishlist", time: "Yesterday" },
+              { icon: Gift, color: "text-primary bg-primary/10", text: "Earned 240 reward points", time: "3 days ago" },
+              { icon: Bell, color: "text-accent bg-accent/10", text: "Presale alert: Foo Fighters", time: "5 days ago" },
+            ].map((a, i) => (
+              <li key={i} className="flex items-start gap-3 p-3 rounded-2xl border border-border bg-background">
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${a.color}`}>
+                  <a.icon className="w-4 h-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-foreground">{a.text}</p>
+                  <p className="text-xs text-muted-foreground font-medium">{a.time}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </SectionCard>
+
+        <SectionCard title="Reward tier">
+          <div className="rounded-2xl bg-gradient-to-br from-card to-background border border-border p-5 relative overflow-hidden">
+            <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-primary/20 blur-2xl" />
+            <div className="absolute -bottom-10 -left-10 w-32 h-32 rounded-full bg-accent/20 blur-2xl" />
+            <div className="relative">
+              <div className="flex items-center gap-2 mb-3">
+                <Star className="w-4 h-4 text-primary" fill="currentColor" />
+                <span className="text-xs font-bold uppercase tracking-wider text-foreground">Gold tier</span>
+              </div>
+              <p className="font-display text-3xl font-bold text-foreground">2,480 pts</p>
+              <p className="text-xs text-muted-foreground font-medium mt-1">520 pts until Platinum</p>
+              <div className="mt-4 h-2 rounded-full bg-muted overflow-hidden">
+                <div className="h-full w-[82%] bg-gradient-to-r from-primary to-accent rounded-full" />
+              </div>
+            </div>
+          </div>
+        </SectionCard>
+      </div>
     </div>
-    </div>
-  </>
-);
+  );
+};
+
+const Countdown = () => {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  // mock: 4h 12m 32s from page mount baseline
+  const base = useMemo(() => Date.now() + 4 * 3600_000 + 12 * 60_000 + 32_000, []);
+  const diff = Math.max(0, Math.floor((base - now) / 1000));
+  const hh = String(Math.floor(diff / 3600)).padStart(2, "0");
+  const mm = String(Math.floor((diff % 3600) / 60)).padStart(2, "0");
+  const ss = String(diff % 60).padStart(2, "0");
+  return (
+    <span className="font-display text-foreground font-bold text-2xl tracking-widest tabular-nums">
+      {hh} <span className="text-primary">:</span> {mm} <span className="text-primary">:</span> {ss}
+    </span>
+  );
+};
 
 const Tickets = ({ upcoming }: { upcoming: typeof events }) => (
   <div className="space-y-4">
