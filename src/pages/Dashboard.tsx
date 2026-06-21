@@ -284,11 +284,23 @@ const SidebarLink = ({
   );
 };
 
-const STATS = [
-  { label: "Active tickets",  value: "12",    delta: "+2",    trend: "up" as const,   icon: Ticket,     accent: "text-primary", bg: "bg-primary/10", hover: "hover:border-primary/50" },
-  { label: "Arena balance",   value: "$1,420",delta: "Total", trend: "flat" as const, icon: CreditCard, accent: "text-accent",  bg: "bg-accent/10",  hover: "hover:border-accent/50" },
-  { label: "Fan streak",      value: "14 Days",delta: "+3d",  trend: "up" as const,   icon: Sparkles,   accent: "text-foreground", bg: "bg-foreground/10", hover: "" },
-  { label: "Rank tier",       value: "LEGEND",delta: "Top 4%",trend: "up" as const,   icon: Trophy,     accent: "text-primary", bg: "bg-primary/10", hover: "hover:border-primary/50", valueAccent: "text-primary" },
+type Stat = {
+  label: string;
+  value: string;
+  delta: string;
+  trend: "up" | "down" | "flat";
+  icon: typeof Ticket;
+  accent: string;
+  bg: string;
+  hover: string;
+  valueAccent?: string;
+};
+
+const STATS: Stat[] = [
+  { label: "Active tickets",  value: "12",     delta: "+2",     trend: "up",   icon: Ticket,     accent: "text-primary",    bg: "bg-primary/10",    hover: "hover:border-primary/50" },
+  { label: "Arena balance",   value: "$1,420", delta: "Total",  trend: "flat", icon: CreditCard, accent: "text-accent",     bg: "bg-accent/10",     hover: "hover:border-accent/50" },
+  { label: "Fan streak",      value: "14 Days",delta: "+3d",    trend: "up",   icon: Sparkles,   accent: "text-foreground", bg: "bg-foreground/10", hover: "" },
+  { label: "Rank tier",       value: "LEGEND", delta: "Top 4%", trend: "up",   icon: Trophy,     accent: "text-primary",    bg: "bg-primary/10",    hover: "hover:border-primary/50", valueAccent: "text-primary" },
 ];
 
 const Overview = ({ user, upcoming }: { user: MockUser; upcoming: typeof events }) => {
@@ -321,7 +333,7 @@ const Overview = ({ user, upcoming }: { user: MockUser; upcoming: typeof events 
               </span>
             </div>
             <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">{s.label}</p>
-            <h3 className={`font-display text-3xl font-bold mt-1 ${(s as any).valueAccent ?? "text-foreground"}`}>
+            <h3 className={`font-display text-3xl font-bold mt-1 ${s.valueAccent ?? "text-foreground"}`}>
               {s.value}
             </h3>
           </motion.div>
